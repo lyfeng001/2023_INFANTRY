@@ -300,7 +300,6 @@ gimbal_control_t gimbal_control;
 
 // motor current
 // 发送的电机电流
-static uint8_t sendtocom_count = 1;
 static int16_t yaw_can_set_current = 0, pitch_can_set_current = 0, shoot_can_set_current = 0; //,cover_can_set_current = 0;
 
 /**
@@ -323,7 +322,6 @@ void gimbal_task(void const *pvParameters)
   gimbal_init(&gimbal_control);
   // shoot init
   // 射击初始化
-  kalman_para_init(); // 滤波卡尔曼初始化
   shoot_init();
   // 自瞄初始化
   autoaim_init();
@@ -374,14 +372,7 @@ void gimbal_task(void const *pvParameters)
 #if GIMBAL_TEST_MODE
     J_scope_gimbal_test();
 #endif
-#ifdef AutoAim
-    sendtocom_count++;
-    if (sendtocom_count == 5)
-    {
-      sendtoComputer(0, 1, 0, 0, (gimbal_control.gimbal_yaw_motor.absolute_angle * 57.3), (gimbal_control.gimbal_pitch_motor.absolute_angle * 57.3));
-      sendtocom_count = 1;
-    }
-#endif
+
     vTaskDelay(GIMBAL_CONTROL_TIME);
 
 #if INCLUDE_uxTaskGetStackHighWaterMark
@@ -676,7 +667,7 @@ static void gimbal_init(gimbal_control_t *init)
   init->gimbal_pitch_motor.autoaim_offset = PITCH_AUTO_OFFSET;
   init->gimbal_yaw_motor.autoaim_offset = YAW_AUTO_OFFSET;
   // 自瞄数据包指针获取
-  init->auto_aim = get_autoaim_point();
+  init->auto_aim = get_autoaim_data();
 
   // 陀螺仪数据指针获取
   init->gimbal_INT_angle_point = get_INS_angle_point();
@@ -769,22 +760,22 @@ static void gimbal_feedback_update(gimbal_control_t *feedback_update)
 #endif
   feedback_update->gimbal_yaw_motor.motor_gyro = arm_cos_f32(feedback_update->gimbal_pitch_motor.relative_angle) * (*(feedback_update->gimbal_INT_gyro_point + INS_GYRO_Z_ADDRESS_OFFSET)) - arm_sin_f32(feedback_update->gimbal_pitch_motor.relative_angle) * (*(feedback_update->gimbal_INT_gyro_point + INS_GYRO_X_ADDRESS_OFFSET));
   // feedback_update->gimbal_yaw_motor.autoaim_offset = -feedback_update->gimbal_yaw_motor.motor_gyro  * (0.02+ (feedback_update->auto_aim->autoaim_rx->speed-400)/1000.0f/15.0f );
-  if (feedback_update->auto_aim->autoaim_rx->yaw != 0)
-  {
-    feedback_update->gimbal_yaw_motor.is_autoaim = 1;
-  }
-  else
-  {
-    feedback_update->gimbal_yaw_motor.is_autoaim = 0;
-  }
-  if (feedback_update->auto_aim->autoaim_rx->pitch != 0)
-  {
-    feedback_update->gimbal_pitch_motor.is_autoaim = 1;
-  }
-  else
-  {
-    feedback_update->gimbal_pitch_motor.is_autoaim = 0;
-  }
+  // if (feedback_update->auto_aim->autoaim_rx->yaw != 0)
+  // {
+  //   feedback_update->gimbal_yaw_motor.is_autoaim = 1;
+  // }
+  // else
+  // {
+  //   feedback_update->gimbal_yaw_motor.is_autoaim = 0;
+  // }
+  // if (feedback_update->auto_aim->autoaim_rx->pitch != 0)
+  // {
+  //   feedback_update->gimbal_pitch_motor.is_autoaim = 1;
+  // }
+  // else
+  // {
+  //   feedback_update->gimbal_pitch_motor.is_autoaim = 0;
+  // }
 }
 
 /**

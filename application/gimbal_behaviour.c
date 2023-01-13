@@ -276,9 +276,6 @@ static void gimbal_motionless_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *
 // 云台行为状态机
 static gimbal_behaviour_e gimbal_behaviour = GIMBAL_ZERO_FORCE;
 gimbal_behaviour_e gimbal_ob;
-extern kalman_filter_t kalman_filter_pitch;
-extern kalman_filter_t kalman_filter_yaw;
-extern float kalman_filter_calc(kalman_filter_t *F, float signal1, float signal2);
 
 uint32_t last_timestamp;
 uint32_t this_timestamp;
@@ -803,22 +800,8 @@ static void gimbal_auto_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *
   {
     return;
   }
-
-  // 以下为yaw轴kalman滤波及提前量预判
-
-  nowtarget = kalman_filter_calc(&kalman_filter_yaw, gimbal_control_set->auto_aim->yaw_target, gimbal_control_set->auto_aim->yaw_speed);
-  //	lasttarget = kalman_filter_yaw.filtered_value[0];
-  lastspeed = kalman_filter_yaw.filtered_value[1];
-  yawtarget = nowtarget + lastspeed * (0.02 + (gimbal_control_set->auto_aim->autoaim_rx->speed - 400) / 1000.0f / 15.0f) - gimbal_control_set->auto_aim->my_yaw_overloop;
-
-  //****************************//
-
-  *yaw = yawtarget;
+  *yaw = gimbal_control_set->auto_aim->yaw_target;
   *pitch = gimbal_control_set->auto_aim->pitch_target;
-  //			*pitch = -gimbal_control_set->gimbal_rc_ctrl->mouse.y * PITCH_MOUSE_SEN;
-  // 不控制机器人
-  //			*yaw = 0.0f;
-  //			*pitch = 0.0f;
 }
 /**
  * @brief          云台编码值控制，电机是相对角度控制。

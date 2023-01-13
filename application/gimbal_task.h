@@ -534,7 +534,7 @@ typedef struct
   gimbal_motor_t gimbal_yaw_motor;
   gimbal_motor_t gimbal_pitch_motor;
   gimbal_step_cali_t gimbal_cali;
-  const auto_aim_t *auto_aim;
+  const autoaim_data_t *auto_aim;
 } gimbal_control_t;
 
 /**
@@ -624,10 +624,5 @@ extern void set_cali_gimbal_hook(const uint16_t yaw_offset, const uint16_t pitch
 @brief 自瞄相关函数	 autoaim functions
 */
 extern void set_cali_gimbal_hook(const uint16_t yaw_offset, const uint16_t pitch_offset, const fp32 max_yaw, const fp32 min_yaw, const fp32 max_pitch, const fp32 min_pitch);
-extern void autoaim_init(void);
-extern const auto_aim_t *get_autoaim_point(void);
-extern void sendtoComputer(int timestamp_doing, int auto_aim, int big_buff, int entering_auto_aim, float yaw, float pitch);
-
-extern void kalman_para_init(void);
 
 #endif
