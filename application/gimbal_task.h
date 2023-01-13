@@ -48,9 +48,9 @@
 // yaw speed close-loop PID params, max out and max iout
 // yaw 速度环 PID参数以及 PID最大输出，积分输出
 
-#define YAW_SPEED_PID_KP 10000.0f      // 3600.0f//2500.0f//3600.0f
-#define YAW_SPEED_PID_KI 40.5f         // 20.0f//1.5f//20.0f
-#define YAW_SPEED_PID_KD 0.0f          // 0.0f//0.0f
+#define YAW_SPEED_PID_KP 10000.0f	   // 3600.0f//2500.0f//3600.0f
+#define YAW_SPEED_PID_KI 40.5f		   // 20.0f//1.5f//20.0f
+#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
 #define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 26.0f // 20.0f//26.0f
 #define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f//0.0f
 #define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 3.4f//0.3f
@@ -73,9 +73,9 @@
 // yaw speed close-loop PID params, max out and max iout
 // yaw 速度环 PID参数以及 PID最大输出，积分输出
 
-#define YAW_SPEED_PID_KP 10000.0f      // 10000.0f//2500.0f//3600.0f
-#define YAW_SPEED_PID_KI 40.5f         // 40.0f//1.5f//20.0f
-#define YAW_SPEED_PID_KD 0.0f          // 0.0f//0.0f
+#define YAW_SPEED_PID_KP 10000.0f	   // 10000.0f//2500.0f//3600.0f
+#define YAW_SPEED_PID_KI 40.5f		   // 40.0f//1.5f//20.0f
+#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
 #define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 20.76f // 20.0f//26.0f
 #define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f// 0.0f//0.0f
 #define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 0.15f// 3.4f//0.3f
@@ -98,9 +98,9 @@
 // yaw speed close-loop PID params, max out and max iout
 // yaw 速度环 PID参数以及 PID最大输出，积分输出
 
-#define YAW_SPEED_PID_KP 12000.0f      // 3600.0f//2500.0f//3600.0f
-#define YAW_SPEED_PID_KI 40.5f         // 20.0f//1.5f//20.0f
-#define YAW_SPEED_PID_KD 0.0f          // 0.0f//0.0f
+#define YAW_SPEED_PID_KP 12000.0f	   // 3600.0f//2500.0f//3600.0f
+#define YAW_SPEED_PID_KI 40.5f		   // 20.0f//1.5f//20.0f
+#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
 #define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 26.0f // 20.0f//26.0f
 #define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f//0.0f
 #define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 3.4f//0.3f
@@ -456,85 +456,85 @@
 
 typedef enum
 {
-  GIMBAL_MOTOR_RAW = 0, // 电机原始值控制
-  GIMBAL_MOTOR_GYRO,    // 电机陀螺仪角度控制
-  GIMBAL_MOTOR_ENCONDE, // 电机编码值角度控制
-  GIMBAL_MOTOR_AUTO,    // Autoaimmode
+	GIMBAL_MOTOR_RAW = 0, // 电机原始值控制
+	GIMBAL_MOTOR_GYRO,	  // 电机陀螺仪角度控制
+	GIMBAL_MOTOR_ENCONDE, // 电机编码值角度控制
+	GIMBAL_MOTOR_AUTO,	  // Autoaimmode
 } gimbal_motor_mode_e;
 
 typedef struct
 {
-  fp32 kp;
-  fp32 ki;
-  fp32 kd;
+	fp32 kp;
+	fp32 ki;
+	fp32 kd;
 
-  fp32 set;
-  fp32 get;
-  fp32 err;
-  fp32 last_err;
+	fp32 set;
+	fp32 get;
+	fp32 err;
+	fp32 last_err;
 
-  fp32 max_out;
-  fp32 max_iout;
-  fp32 max_dout;
+	fp32 max_out;
+	fp32 max_iout;
+	fp32 max_dout;
 
-  fp32 Pout;
-  fp32 Iout;
-  fp32 Dout;
+	fp32 Pout;
+	fp32 Iout;
+	fp32 Dout;
 
-  fp32 out;
-  fp32 dT;
+	fp32 out;
+	fp32 dT;
 } gimbal_PID_t;
 
 typedef struct
 {
-  const motor_measure_t *gimbal_motor_measure;
-  gimbal_PID_t gimbal_motor_absolute_angle_pid;
-  gimbal_PID_t gimbal_motor_relative_angle_pid;
-  pid_type_def gimbal_motor_gyro_pid;
-  gimbal_motor_mode_e gimbal_motor_mode;
-  gimbal_motor_mode_e last_gimbal_motor_mode;
-  uint16_t offset_ecd;
-  fp32 max_relative_angle; // rad
-  fp32 min_relative_angle; // rad
+	const motor_measure_t *gimbal_motor_measure;
+	gimbal_PID_t gimbal_motor_absolute_angle_pid;
+	gimbal_PID_t gimbal_motor_relative_angle_pid;
+	pid_type_def gimbal_motor_gyro_pid;
+	gimbal_motor_mode_e gimbal_motor_mode;
+	gimbal_motor_mode_e last_gimbal_motor_mode;
+	uint16_t offset_ecd;
+	fp32 max_relative_angle; // rad
+	fp32 min_relative_angle; // rad
 
-  fp32 relative_angle;     // rad
-  fp32 relative_angle_set; // rad
-  fp32 absolute_angle;     // rad
-  fp32 absolute_angle_set; // rad
-  fp32 motor_gyro;         // rad/s
-  fp32 motor_gyro_set;
-  fp32 motor_speed;
-  fp32 raw_cmd_current;
-  fp32 current_set;
-  int16_t given_current;
-  fp32 autoaim_offset;
-  bool_t is_autoaim;
-  bool_t is_lockon;
+	fp32 relative_angle;	 // rad
+	fp32 relative_angle_set; // rad
+	fp32 absolute_angle;	 // rad
+	fp32 absolute_angle_set; // rad
+	fp32 motor_gyro;		 // rad/s
+	fp32 motor_gyro_set;
+	fp32 motor_speed;
+	fp32 raw_cmd_current;
+	fp32 current_set;
+	int16_t given_current;
+	fp32 autoaim_offset;
+	bool_t is_autoaim;
+	bool_t is_lockon;
 
 } gimbal_motor_t;
 
 typedef struct
 {
-  fp32 max_yaw;
-  fp32 min_yaw;
-  fp32 max_pitch;
-  fp32 min_pitch;
-  uint16_t max_yaw_ecd;
-  uint16_t min_yaw_ecd;
-  uint16_t max_pitch_ecd;
-  uint16_t min_pitch_ecd;
-  uint8_t step;
+	fp32 max_yaw;
+	fp32 min_yaw;
+	fp32 max_pitch;
+	fp32 min_pitch;
+	uint16_t max_yaw_ecd;
+	uint16_t min_yaw_ecd;
+	uint16_t max_pitch_ecd;
+	uint16_t min_pitch_ecd;
+	uint8_t step;
 } gimbal_step_cali_t;
 
 typedef struct
 {
-  const RC_ctrl_t *gimbal_rc_ctrl;
-  const fp32 *gimbal_INT_angle_point;
-  const fp32 *gimbal_INT_gyro_point;
-  gimbal_motor_t gimbal_yaw_motor;
-  gimbal_motor_t gimbal_pitch_motor;
-  gimbal_step_cali_t gimbal_cali;
-  const autoaim_data_t *auto_aim;
+	const RC_ctrl_t *gimbal_rc_ctrl;
+	const fp32 *gimbal_INT_angle_point;
+	const fp32 *gimbal_INT_gyro_point;
+	gimbal_motor_t gimbal_yaw_motor;
+	gimbal_motor_t gimbal_pitch_motor;
+	gimbal_step_cali_t gimbal_cali;
+	const autoaim_data_t *auto_aim;
 } gimbal_control_t;
 
 /**

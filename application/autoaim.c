@@ -27,37 +27,37 @@
 #pragma pack(1)
 typedef struct
 {
-	uint8_t head;		// 1 byte
-	uint16_t timestamp; // 2 byte
-	float yaw;			// 4 byte
-	float pitch;		// 4 byte
-	float speed;		// 4 byte
-	uint8_t state;		// 1 byte
-	uint16_t time;		// 2 byte
-	uint8_t extra[2];	// 2 byte
-	uint8_t crc8_check; // 1 byte
-	uint8_t end;		// 1 byte
+    uint8_t head;       // 1 byte
+    uint16_t timestamp; // 2 byte
+    float yaw;          // 4 byte
+    float pitch;        // 4 byte
+    float speed;        // 4 byte
+    uint8_t state;      // 1 byte
+    uint16_t time;      // 2 byte
+    uint8_t extra[2];   // 2 byte
+    uint8_t crc8_check; // 1 byte
+    uint8_t end;        // 1 byte
 } frame_t;
 #pragma pack()
 
 typedef struct
 {
-	float raw_value;
-	float filtered_value[2];
-	mat xhat, xhatminus, z, A, H, AT, HT, Q, R, P, Pminus, K;
+    float raw_value;
+    float filtered_value[2];
+    mat xhat, xhatminus, z, A, H, AT, HT, Q, R, P, Pminus, K;
 } kalman_filter_t;
 
 typedef struct
 {
-	float raw_value;
-	float filtered_value[2];
-	float xhat_data[2], xhatminus_data[2], z_data[2], Pminus_data[4], K_data[4];
-	float P_data[4];
-	float AT_data[4], HT_data[4];
-	float A_data[4];
-	float H_data[4];
-	float Q_data[4];
-	float R_data[4];
+    float raw_value;
+    float filtered_value[2];
+    float xhat_data[2], xhatminus_data[2], z_data[2], Pminus_data[4], K_data[4];
+    float P_data[4];
+    float AT_data[4], HT_data[4];
+    float A_data[4];
+    float H_data[4];
+    float Q_data[4];
+    float R_data[4];
 } kalman_filter_init_t;
 
 extern UART_HandleTypeDef huart1;
