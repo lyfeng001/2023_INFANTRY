@@ -14,9 +14,7 @@
 typedef struct
 {
 	fp32 yaw_target;
-	fp32 my_yaw_overloop;
 	fp32 pitch_target;
-	fp32 yaw_speed;
 } autoaim_data_t;
 
 void autoaim_init(void);

@@ -164,8 +164,6 @@ static void gimbal_control_loop(gimbal_control_t *control_loop);
  * @retval         none
  */
 static void gimbal_motor_absolute_angle_control(gimbal_motor_t *gimbal_motor);
-static void gimbal_motor_auto_angle_control(gimbal_motor_t *gimbal_motor);
-static void gimbal_motor_auto_angle_control_p(gimbal_motor_t *gimbal_motor);
 /**
  * @brief          gimbal control mode :GIMBAL_MOTOR_ENCONDE, use the encode relative angle  to control.
  * @param[out]     gimbal_motor: yaw motor or pitch motor
@@ -200,8 +198,6 @@ static void gimbal_motor_raw_angle_control(gimbal_motor_t *gimbal_motor);
  */
 static void gimbal_absolute_angle_limit(gimbal_motor_t *gimbal_motor, fp32 add);
 static void gimbal_absolute_angle_no_limit(gimbal_motor_t *gimbal_motor, fp32 add);
-static void gimbal_auto_angle_limit(gimbal_motor_t *gimbal_motor, fp32 add);
-static void gimbal_auto_angle_no_limit(gimbal_motor_t *gimbal_motor, fp32 add);
 /**
  * @brief          limit angle set in GIMBAL_MOTOR_ENCONDE mode, avoid exceeding the max angle
  * @param[out]     gimbal_motor: yaw motor or pitch motor
@@ -759,23 +755,6 @@ static void gimbal_feedback_update(gimbal_control_t *feedback_update)
 																				 feedback_update->gimbal_yaw_motor.offset_ecd);
 #endif
 	feedback_update->gimbal_yaw_motor.motor_gyro = arm_cos_f32(feedback_update->gimbal_pitch_motor.relative_angle) * (*(feedback_update->gimbal_INT_gyro_point + INS_GYRO_Z_ADDRESS_OFFSET)) - arm_sin_f32(feedback_update->gimbal_pitch_motor.relative_angle) * (*(feedback_update->gimbal_INT_gyro_point + INS_GYRO_X_ADDRESS_OFFSET));
-	// feedback_update->gimbal_yaw_motor.autoaim_offset = -feedback_update->gimbal_yaw_motor.motor_gyro  * (0.02+ (feedback_update->auto_aim->autoaim_rx->speed-400)/1000.0f/15.0f );
-	// if (feedback_update->auto_aim->autoaim_rx->yaw != 0)
-	// {
-	//   feedback_update->gimbal_yaw_motor.is_autoaim = 1;
-	// }
-	// else
-	// {
-	//   feedback_update->gimbal_yaw_motor.is_autoaim = 0;
-	// }
-	// if (feedback_update->auto_aim->autoaim_rx->pitch != 0)
-	// {
-	//   feedback_update->gimbal_pitch_motor.is_autoaim = 1;
-	// }
-	// else
-	// {
-	//   feedback_update->gimbal_pitch_motor.is_autoaim = 0;
-	// }
 }
 
 /**
@@ -834,10 +813,7 @@ static void gimbal_mode_change_control_transit(gimbal_control_t *gimbal_mode_cha
 	{
 		gimbal_mode_change->gimbal_yaw_motor.relative_angle_set = gimbal_mode_change->gimbal_yaw_motor.relative_angle;
 	}
-	else if (gimbal_mode_change->gimbal_yaw_motor.last_gimbal_motor_mode != GIMBAL_MOTOR_AUTO && gimbal_mode_change->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_AUTO)
-	{
-		gimbal_mode_change->gimbal_yaw_motor.absolute_angle_set = gimbal_mode_change->gimbal_yaw_motor.absolute_angle;
-	}
+	
 	gimbal_mode_change->gimbal_yaw_motor.last_gimbal_motor_mode = gimbal_mode_change->gimbal_yaw_motor.gimbal_motor_mode;
 
 	// pitch电机状态机切换保存数据
@@ -877,6 +853,7 @@ static void gimbal_set_control(gimbal_control_t *set_control)
 	fp32 add_pitch_angle = 0.0f;
 
 	gimbal_behaviour_control_set(&add_yaw_angle, &add_pitch_angle, set_control);
+	
 	// yaw电机模式控制
 	if (set_control->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_RAW)
 	{
@@ -890,15 +867,6 @@ static void gimbal_set_control(gimbal_control_t *set_control)
 		gimbal_absolute_angle_no_limit(&set_control->gimbal_yaw_motor, add_yaw_angle);
 #else
 		gimbal_absolute_angle_limit(&set_control->gimbal_yaw_motor, add_yaw_angle);
-#endif
-	}
-	else if (set_control->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_AUTO)
-	{
-		// gyro模式下，陀螺仪角度控制
-#if SLIP_RING
-		gimbal_auto_angle_no_limit(&set_control->gimbal_yaw_motor, add_yaw_angle);
-#else
-		gimbal_auto_angle_limit(&set_control->gimbal_yaw_motor, add_yaw_angle);
 #endif
 	}
 	else if (set_control->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_ENCONDE)
@@ -921,11 +889,6 @@ static void gimbal_set_control(gimbal_control_t *set_control)
 	{
 		// gyro模式下，陀螺仪角度控制
 		gimbal_absolute_angle_limit(&set_control->gimbal_pitch_motor, add_pitch_angle);
-	}
-	else if (set_control->gimbal_pitch_motor.gimbal_motor_mode == GIMBAL_MOTOR_AUTO)
-	{
-		// gyro模式下，陀螺仪角度控制
-		gimbal_auto_angle_limit(&set_control->gimbal_pitch_motor, add_pitch_angle);
 	}
 	else if (set_control->gimbal_pitch_motor.gimbal_motor_mode == GIMBAL_MOTOR_ENCONDE)
 	{
@@ -988,49 +951,6 @@ static void gimbal_absolute_angle_limit(gimbal_motor_t *gimbal_motor, fp32 add)
 }
 
 /**
- * @brief          gimbal control mode :GIMBAL_MOTOR_AUTO, use euler angle calculated by gyro sensor to control.
- * @param[out]     gimbal_motor: yaw motor or pitch motor
- * @retval         none
- */
-/**
-  * @brief          云台控制模式:GIMBAL_MOTOR_AUTO，使用陀螺仪计算的欧拉角进行控制
-  * @param[out]     gimbal_motor:yaw电机或者pitch电机
-  * @retval         none
-	@caution				与absolute模式不同的地方在于，返回的set值是增值，需与controlloop配合使用
-  */
-static void gimbal_auto_angle_limit(gimbal_motor_t *gimbal_motor, fp32 add)
-{
-	static fp32 bias_angle;
-	if (gimbal_motor == NULL)
-	{
-		return;
-	}
-	// now angle error
-	// 当前控制误差角度
-	bias_angle = rad_format(gimbal_motor->absolute_angle_set - gimbal_motor->absolute_angle);
-	// relative angle + angle error + add_angle > max_relative angle
-	// 云台相对角度+ 误差角度 + 新增角度 如果大于 最大机械角度
-	if (gimbal_motor->relative_angle + bias_angle + add > gimbal_motor->max_relative_angle)
-	{
-		// 如果是往最大机械角度控制方向
-		if (add > 0.0f)
-		{
-			// calculate max add_angle
-			// 计算出一个最大的添加角度，
-			add = gimbal_motor->max_relative_angle - gimbal_motor->relative_angle - bias_angle;
-		}
-	}
-	else if (gimbal_motor->relative_angle + bias_angle + add < gimbal_motor->min_relative_angle)
-	{
-		if (add < 0.0f)
-		{
-			add = gimbal_motor->min_relative_angle - gimbal_motor->relative_angle - bias_angle;
-		}
-	}
-	gimbal_motor->absolute_angle_set = rad_format(add);
-}
-
-/**
  * @brief          云台控制模式:GIMBAL_MOTOR_GYRO，无限位版本（为了保证格式一样，所以单独建立函数）
  * @param[out]     gimbal_motor:yaw电机或者pitch电机
  * @retval         none
@@ -1044,15 +964,6 @@ static void gimbal_absolute_angle_no_limit(gimbal_motor_t *gimbal_motor, fp32 ad
 	}
 	angle_set = gimbal_motor->absolute_angle_set;
 	gimbal_motor->absolute_angle_set = rad_format(angle_set + add);
-}
-
-static void gimbal_auto_angle_no_limit(gimbal_motor_t *gimbal_motor, fp32 add)
-{
-	if (gimbal_motor == NULL)
-	{
-		return;
-	}
-	gimbal_motor->absolute_angle_set = rad_format(add);
 }
 
 /**
@@ -1132,10 +1043,6 @@ static void gimbal_control_loop(gimbal_control_t *control_loop)
 	{
 		gimbal_motor_absolute_angle_control(&control_loop->gimbal_yaw_motor);
 	}
-	else if (control_loop->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_AUTO)
-	{
-		gimbal_motor_auto_angle_control(&control_loop->gimbal_yaw_motor);
-	}
 	else if (control_loop->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_ENCONDE)
 	{
 		gimbal_motor_relative_angle_control(&control_loop->gimbal_yaw_motor);
@@ -1148,10 +1055,6 @@ static void gimbal_control_loop(gimbal_control_t *control_loop)
 	else if (control_loop->gimbal_pitch_motor.gimbal_motor_mode == GIMBAL_MOTOR_GYRO)
 	{
 		gimbal_motor_absolute_angle_control(&control_loop->gimbal_pitch_motor);
-	}
-	else if (control_loop->gimbal_pitch_motor.gimbal_motor_mode == GIMBAL_MOTOR_AUTO)
-	{
-		gimbal_motor_auto_angle_control_p(&control_loop->gimbal_pitch_motor);
 	}
 	else if (control_loop->gimbal_pitch_motor.gimbal_motor_mode == GIMBAL_MOTOR_ENCONDE)
 	{
@@ -1181,84 +1084,6 @@ static void gimbal_motor_absolute_angle_control(gimbal_motor_t *gimbal_motor)
 	//		gimbal_motor->motor_gyro_set = gimbal_PID_calc_oldmethod(&gimbal_motor->gimbal_motor_absolute_angle_pid, gimbal_motor->absolute_angle, gimbal_motor->absolute_angle_set);
 	//		gimbal_motor->current_set = PID_calc_oldmethod(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro * 57.3f, gimbal_motor->motor_gyro_set / 20.0f);
 	// 控制值赋值
-	gimbal_motor->given_current = (int16_t)(gimbal_motor->current_set);
-}
-
-static void gimbal_motor_auto_angle_control(gimbal_motor_t *gimbal_motor)
-{
-	if (gimbal_motor == NULL)
-	{
-		return;
-	}
-	fp32 angle_delta;
-	if (!gimbal_motor->is_autoaim)
-	{
-		angle_delta = 0;
-	}
-	else
-	{
-		angle_delta = (gimbal_motor->absolute_angle_set + (gimbal_motor->autoaim_offset));
-	}
-
-	if (fabs(angle_delta) < (1.4 / 57.3))
-	{
-		gimbal_motor->is_lockon = 1;
-	}
-	else
-	{
-		gimbal_motor->is_lockon = 0;
-	}
-	if (gimbal_motor->absolute_angle_set > 8.5 / 57.3)
-	{
-		angle_delta = 8.5 / 57.3;
-	}
-	else if (gimbal_motor->absolute_angle_set < -8.5 / 57.3)
-	{
-		angle_delta = -8.5 / 57.3;
-	}
-
-	// 角度环，速度环串级pid调试
-	gimbal_motor->motor_gyro_set = gimbal_PID_calc(&gimbal_motor->gimbal_motor_absolute_angle_pid, 0, angle_delta, gimbal_motor->motor_gyro);
-	gimbal_motor->current_set = PID_calc(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro, gimbal_motor->motor_gyro_set);
-	gimbal_motor->given_current = (int16_t)(gimbal_motor->current_set);
-}
-
-static void gimbal_motor_auto_angle_control_p(gimbal_motor_t *gimbal_motor)
-{
-	if (gimbal_motor == NULL)
-	{
-		return;
-	}
-	fp32 angle_delta;
-	if (!gimbal_motor->is_autoaim)
-	{
-		angle_delta = 0;
-	}
-	else
-	{
-		angle_delta = (gimbal_motor->absolute_angle_set + (gimbal_motor->autoaim_offset));
-	}
-
-	if (fabs(angle_delta) < (1.4 / 57.3))
-	{
-		gimbal_motor->is_lockon = 1;
-	}
-	else
-	{
-		gimbal_motor->is_lockon = 0;
-	}
-	if (gimbal_motor->absolute_angle_set > 8.5 / 57.3)
-	{
-		angle_delta = 8.5 / 57.3;
-	}
-	else if (gimbal_motor->absolute_angle_set < -8.5 / 57.3)
-	{
-		angle_delta = -8.5 / 57.3;
-	}
-
-	// 角度环，速度环串级pid调试
-	gimbal_motor->motor_gyro_set = gimbal_PID_calc(&gimbal_motor->gimbal_motor_absolute_angle_pid, 0, angle_delta, gimbal_motor->motor_gyro);
-	gimbal_motor->current_set = PID_calc(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro, gimbal_motor->motor_gyro_set);
 	gimbal_motor->given_current = (int16_t)(gimbal_motor->current_set);
 }
 

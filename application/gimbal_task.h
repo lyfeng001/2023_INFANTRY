@@ -459,7 +459,6 @@ typedef enum
 	GIMBAL_MOTOR_RAW = 0, // 电机原始值控制
 	GIMBAL_MOTOR_GYRO,	  // 电机陀螺仪角度控制
 	GIMBAL_MOTOR_ENCONDE, // 电机编码值角度控制
-	GIMBAL_MOTOR_AUTO,	  // Autoaimmode
 } gimbal_motor_mode_e;
 
 typedef struct

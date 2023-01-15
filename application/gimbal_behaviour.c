@@ -275,25 +275,6 @@ static void gimbal_motionless_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *
 
 // 云台行为状态机
 static gimbal_behaviour_e gimbal_behaviour = GIMBAL_ZERO_FORCE;
-gimbal_behaviour_e gimbal_ob;
-
-uint32_t last_timestamp;
-uint32_t this_timestamp;
-uint16_t delta_timestamp;
-// static fp32 yaw_calc;   //was declared but never referenced
-// static fp32 pitch_calc;
-fp32 yaw_velo_clac;
-fp32 lastyaw;
-fp32 thisyaw;
-fp32 lasttarget;
-fp32 nowtarget;
-fp32 lastspeed;
-fp32 nowmyyaw;
-fp32 lastmyyaw;
-fp32 nowmyspeed;
-uint16_t yaw_calc1000;
-uint16_t yaw_raw1000;
-fp32 yawtarget;
 
 /**
  * @brief          the function is called by gimbal_set_mode function in gimbal_task.c
@@ -316,12 +297,7 @@ void gimbal_behaviour_mode_set(gimbal_control_t *gimbal_mode_set)
     // set gimbal_behaviour variable
     // 云台行为状态机设置
     gimbal_behavour_set(gimbal_mode_set);
-    gimbal_ob = gimbal_behaviour;
-    /**此if用于判断是否为自瞄模式，更新自动发射量*/
-    if (gimbal_behaviour != GIMBAL_AUTO)
-    {
-        gimbal_mode_set->gimbal_yaw_motor.is_lockon = 0;
-    }
+
     // accoring to gimbal_behaviour, set motor control mode
     // 根据云台行为状态机设置电机状态机
     if (gimbal_behaviour == GIMBAL_ZERO_FORCE)
@@ -356,8 +332,8 @@ void gimbal_behaviour_mode_set(gimbal_control_t *gimbal_mode_set)
     }
     else if (gimbal_behaviour == GIMBAL_AUTO)
     {
-        gimbal_mode_set->gimbal_yaw_motor.gimbal_motor_mode = GIMBAL_MOTOR_AUTO;
-        gimbal_mode_set->gimbal_pitch_motor.gimbal_motor_mode = GIMBAL_MOTOR_AUTO;
+        gimbal_mode_set->gimbal_yaw_motor.gimbal_motor_mode = GIMBAL_MOTOR_GYRO;
+        gimbal_mode_set->gimbal_pitch_motor.gimbal_motor_mode = GIMBAL_MOTOR_GYRO;
     }
 }
 
@@ -777,23 +753,7 @@ static void gimbal_absolute_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control
     // static fp32 gimbal_end_angle = 0.0f;   //这三个注释掉因为：declared but never referenced
 }
 
-fp32 whole_speed;
 
-/**
- * @brief
- *
- * @param[out]
- * @param[out]
- * @param[in]
- * @retval         none
- */
-/**
- * @brief
- * @param[out]
- * @param[out]
- * @param[in]
- * @retval         none
- */
 static void gimbal_auto_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *gimbal_control_set)
 {
     if (yaw == NULL || pitch == NULL || gimbal_control_set == NULL)
@@ -803,6 +763,7 @@ static void gimbal_auto_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *
     *yaw = gimbal_control_set->auto_aim->yaw_target;
     *pitch = gimbal_control_set->auto_aim->pitch_target;
 }
+
 /**
  * @brief          云台编码值控制，电机是相对角度控制。
  * @param[in]      yaw: yaw轴角度控制，为角度的增量 单位 rad
