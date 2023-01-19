@@ -760,8 +760,9 @@ static void gimbal_auto_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *
     {
         return;
     }
-    *yaw = gimbal_control_set->auto_aim->yaw_target;
-    *pitch = gimbal_control_set->auto_aim->pitch_target;
+    fp32 gimbal_absolute_yaw = gimbal_control_set->gimbal_yaw_motor.absolute_angle;
+    fp32 gimbal_absolute_pitch = gimbal_control_set->gimbal_pitch_motor.absolute_angle;
+    set_autoaim_angle(yaw, pitch, gimbal_absolute_yaw, gimbal_absolute_pitch);
 }
 
 /**

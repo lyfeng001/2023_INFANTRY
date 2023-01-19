@@ -659,12 +659,6 @@ static void gimbal_init(gimbal_control_t *init)
 	init->gimbal_pitch_motor.max_relative_angle = motor_ecd_to_angle_change(MAX_PITCH, MIDDLE_PITCH);
 	init->gimbal_pitch_motor.min_relative_angle = motor_ecd_to_angle_change(MIN_PITCH, MIDDLE_PITCH);
 
-	// 初始化自瞄偏置
-	init->gimbal_pitch_motor.autoaim_offset = PITCH_AUTO_OFFSET;
-	init->gimbal_yaw_motor.autoaim_offset = YAW_AUTO_OFFSET;
-	// 自瞄数据包指针获取
-	init->auto_aim = get_autoaim_data();
-
 	// 陀螺仪数据指针获取
 	init->gimbal_INT_angle_point = get_INS_angle_point();
 	init->gimbal_INT_gyro_point = get_gyro_data_point();

@@ -11,13 +11,7 @@
 
 #include "struct_typedef.h"
 
-typedef struct
-{
-	fp32 yaw_target;
-	fp32 pitch_target;
-} autoaim_data_t;
-
 void autoaim_init(void);
-const autoaim_data_t *get_autoaim_data(void);
+void set_autoaim_angle(fp32 *yaw_set, fp32 *pitch_set, fp32 gimbal_absolute_yaw, fp32 gimbal_absolute_pitch);
 
 #endif

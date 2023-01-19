@@ -10,6 +10,7 @@
 #include "stm32f4xx_hal.h"
 #include "CRC8_CRC16.h"
 #include "arm_math.h"
+#include "AHRS_middleware.h"
 
 #define AUTOAIM_FRAME_LEN 22
 #define AUTOAIM_FRAME_BUF 44
@@ -23,15 +24,18 @@
 #define mat_mult arm_mat_mult_f32
 #define mat_trans arm_mat_trans_f32
 #define mat_inv arm_mat_inverse_f32
+#define sin arm_sin_f32
+#define cos arm_cos_f32
+#define atan2 AHRS_atan2f
 
 #pragma pack(1)
 typedef struct
 {
     uint8_t head;       // 1 byte
     uint16_t timestamp; // 2 byte
-    float yaw;          // 4 byte
-    float pitch;        // 4 byte
-    float speed;        // 4 byte
+    float x_in_gimbal;  // 4 byte
+    float y_in_gimbal;  // 4 byte
+    float z_in_gimbal;  // 4 byte
     uint8_t state;      // 1 byte
     uint16_t time;      // 2 byte
     uint8_t extra[2];   // 2 byte
@@ -39,6 +43,13 @@ typedef struct
     uint8_t end;        // 1 byte
 } frame_t;
 #pragma pack()
+
+typedef struct
+{
+    fp32 x_in_gimbal;
+    fp32 y_in_gimbal;
+    fp32 z_in_gimbal;
+} autoaim_target_t;
 
 typedef struct
 {
@@ -70,7 +81,7 @@ kalman_filter_init_t kalman_para_pitch;
 kalman_filter_init_t kalman_para_yaw;
 kalman_filter_t kalman_filter_pitch;
 kalman_filter_t kalman_filter_yaw;
-autoaim_data_t auto_aim_data;
+autoaim_target_t autoaim_target;
 
 void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num);
 uint8_t unpack_frame(uint8_t *autoaim_buf);
@@ -79,16 +90,67 @@ void kalman_filter_init(kalman_filter_t *F, kalman_filter_init_t *I);
 void kalman_para_init(void);
 float kalman_filter_calc(kalman_filter_t *F, float signal1, float signal2);
 
-const autoaim_data_t *get_autoaim_data(void)
-{
-    return &auto_aim_data;
-}
-
 void autoaim_init(void)
 {
     usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_BUF);
-    auto_aim_data.pitch_target = 0;
-    auto_aim_data.yaw_target = 0;
+    autoaim_target.x_in_gimbal = 0.0;
+    autoaim_target.y_in_gimbal = 0.0;
+    autoaim_target.z_in_gimbal = 0.0;
+}
+
+void set_autoaim_angle(fp32 *yaw_set, fp32 *pitch_set, fp32 gimbal_absolute_yaw, fp32 gimbal_absolute_pitch)
+{
+    // 云台坐标系：
+    // 右手直角坐标系。
+    // 原点为pitch轴线与yaw轴线交点。
+    // z轴正方向为子弹射出方向，
+    // y轴正方向为垂直子弹射出方向向下，
+    // x轴正方向为面向枪口时的左侧。
+    fp32 x_in_gimbal = autoaim_target.x_in_gimbal;
+    fp32 y_in_gimbal = autoaim_target.y_in_gimbal;
+    fp32 z_in_gimbal = autoaim_target.z_in_gimbal;
+
+    // 世界坐标系:
+    // 右手直角坐标系。
+    // 原点与云台坐标系重合。
+    // y轴正方向为重力加速度方向。
+    // 由于是绝对坐标系，x轴、z轴不好描述，
+    // 可以类比为x轴始终指向北。
+    // 当底盘静止或小陀螺时，可以作为惯性参考系。
+    fp32 x_in_world;
+    fp32 y_in_world;
+    fp32 z_in_world;
+
+    // 将云台坐标系转换为世界坐标系：
+    //
+    // 云台坐标系是如何从世界坐标系变换而来的：
+    //     初始：云台坐标系和世界坐标系（0系）重合。
+    //     yaw轴电机旋转：云台坐标系绕世界坐标系y轴旋转，
+    //                   角度为gimbal_absolute_yaw(rad)，
+    //                   符号符合右手螺旋。
+    //                   该云台坐标系记为1系。
+    //     pitch轴电机旋转：云台坐标系绕1系x轴旋转，
+    //                     角度为gimbal_absolute_pitch(rad)，
+    //                     符号符合右手螺旋。
+    //                     获得2系。
+    //     这里可以看出云台使用的欧拉角旋转为内旋。
+    //
+    // 可得公式：p0 = Ry * Rx * p2
+    // R_y为绕y轴旋转矩阵，R_x为绕x轴旋转矩阵，
+    // 通过该公式，可以将击打目标在云台坐标系下的坐标p2，
+    // 转变为目标在世界坐标系下的坐标p0.
+    fp32 sin_y = sin(gimbal_absolute_yaw);
+    fp32 cos_y = cos(gimbal_absolute_yaw);
+    fp32 sin_x = sin(gimbal_absolute_pitch);
+    fp32 cos_x = cos(gimbal_absolute_pitch);
+    x_in_world = x_in_gimbal * cos_y + y_in_gimbal * sin_y * sin_x + z_in_gimbal * sin_y * cos_x;
+    y_in_world = x_in_gimbal * 0.0 + y_in_gimbal * cos_x + z_in_gimbal * (-sin_x);
+    z_in_world = x_in_gimbal * (-sin_y) + y_in_gimbal * cos_y * sin_x + z_in_gimbal * cos_y * cos_x;
+
+    fp32 xz_length;
+    arm_sqrt_f32(x_in_world * x_in_world + z_in_world * z_in_world, &xz_length);
+    *yaw_set = atan2(x_in_world, z_in_world);
+    *pitch_set = atan2(y_in_world, xz_length);
 }
 
 void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num)
@@ -195,8 +257,9 @@ uint8_t unpack_frame(uint8_t *autoaim_buf)
         return 0;
     }
 
-    auto_aim_data.yaw_target = -frame.yaw / 57.3f;
-    auto_aim_data.pitch_target = frame.pitch / 57.3f;
+    autoaim_target.x_in_gimbal = frame.x_in_gimbal;
+    autoaim_target.y_in_gimbal = frame.y_in_gimbal;
+    autoaim_target.z_in_gimbal = frame.z_in_gimbal;
     return 1;
 }
 

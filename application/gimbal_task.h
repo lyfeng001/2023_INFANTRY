@@ -178,9 +178,6 @@
 #define PITCH_TURN 1
 #define YAW_TURN 0
 
-// 自瞄偏置值
-#define YAW_AUTO_OFFSET 0.036f
-#define PITCH_AUTO_OFFSET 0.07f // 0.1134380453752182f
 // 电机码盘值最大以及中值
 #define HALF_ECD_RANGE 4096
 #define ECD_RANGE 8191
@@ -289,9 +286,6 @@
 #define PITCH_TURN 1
 #define YAW_TURN 0
 
-// 自瞄偏置值
-#define YAW_AUTO_OFFSET 0.036f
-#define PITCH_AUTO_OFFSET 0.07f // 0.1134380453752182f
 // 电机码盘值最大以及中值
 #define HALF_ECD_RANGE 4096
 #define ECD_RANGE 8191
@@ -400,9 +394,6 @@
 #define PITCH_TURN 1
 #define YAW_TURN 0
 
-// 自瞄偏置值
-#define YAW_AUTO_OFFSET 0.036f
-#define PITCH_AUTO_OFFSET 0.07f // 0.1134380453752182f
 // 电机码盘值最大以及中值
 #define HALF_ECD_RANGE 4096
 #define ECD_RANGE 8191
@@ -506,7 +497,6 @@ typedef struct
 	fp32 raw_cmd_current;
 	fp32 current_set;
 	int16_t given_current;
-	fp32 autoaim_offset;
 	bool_t is_autoaim;
 	bool_t is_lockon;
 
@@ -533,7 +523,6 @@ typedef struct
 	gimbal_motor_t gimbal_yaw_motor;
 	gimbal_motor_t gimbal_pitch_motor;
 	gimbal_step_cali_t gimbal_cali;
-	const autoaim_data_t *auto_aim;
 } gimbal_control_t;
 
 /**
@@ -618,10 +607,4 @@ extern bool_t cmd_cali_gimbal_hook(uint16_t *yaw_offset, uint16_t *pitch_offset,
  * @waring         这个函数使用到gimbal_control 静态变量导致函数不适用以上通用指针复用
  */
 extern void set_cali_gimbal_hook(const uint16_t yaw_offset, const uint16_t pitch_offset, const fp32 max_yaw, const fp32 min_yaw, const fp32 max_pitch, const fp32 min_pitch);
-
-/*
-@brief 自瞄相关函数	 autoaim functions
-*/
-extern void set_cali_gimbal_hook(const uint16_t yaw_offset, const uint16_t pitch_offset, const fp32 max_yaw, const fp32 min_yaw, const fp32 max_pitch, const fp32 min_pitch);
-
 #endif
