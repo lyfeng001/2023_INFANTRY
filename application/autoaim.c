@@ -46,9 +46,19 @@ typedef struct
 
 typedef struct
 {
-    fp32 x_in_gimbal;
-    fp32 y_in_gimbal;
-    fp32 z_in_gimbal;
+    fp32 x_in_gimbal;     // m
+    fp32 y_in_gimbal;     // m
+    fp32 z_in_gimbal;     // m
+    fp32 x_in_world;      // m
+    fp32 y_in_world;      // m
+    fp32 z_in_world;      // m
+    fp32 last_x_in_world; // m
+    fp32 last_y_in_world; // m
+    fp32 last_z_in_world; // m
+    fp32 velocity_x;      // m/s
+    fp32 velocity_y;      // m/s
+    fp32 velocity_z;      // m/s
+    bool_t is_latest;
 } autoaim_target_t;
 
 typedef struct
@@ -92,65 +102,93 @@ float kalman_filter_calc(kalman_filter_t *F, float signal1, float signal2);
 
 void autoaim_init(void)
 {
-    usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_BUF);
     autoaim_target.x_in_gimbal = 0.0;
     autoaim_target.y_in_gimbal = 0.0;
     autoaim_target.z_in_gimbal = 0.0;
+    autoaim_target.x_in_world = 0.0;
+    autoaim_target.y_in_world = 0.0;
+    autoaim_target.z_in_world = 0.0;
+    autoaim_target.last_x_in_world = 0.0;
+    autoaim_target.last_y_in_world = 0.0;
+    autoaim_target.last_z_in_world = 0.0;
+    autoaim_target.velocity_x = 0.0;
+    autoaim_target.velocity_y = 0.0;
+    autoaim_target.velocity_z = 0.0;
+    autoaim_target.is_latest = 0;
+    usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_BUF);
 }
 
 void set_autoaim_angle(fp32 *yaw_set, fp32 *pitch_set, fp32 gimbal_absolute_yaw, fp32 gimbal_absolute_pitch)
 {
-    // 云台坐标系：
-    // 右手直角坐标系。
-    // 原点为pitch轴线与yaw轴线交点。
-    // z轴正方向为子弹射出方向，
-    // y轴正方向为垂直子弹射出方向向下，
-    // x轴正方向为面向枪口时的左侧。
-    fp32 x_in_gimbal = autoaim_target.x_in_gimbal;
-    fp32 y_in_gimbal = autoaim_target.y_in_gimbal;
-    fp32 z_in_gimbal = autoaim_target.z_in_gimbal;
+    if (autoaim_target.is_latest)
+    {
+        // 云台坐标系：
+        // 右手直角坐标系。
+        // 原点为pitch轴线与yaw轴线交点。
+        // z轴正方向为子弹射出方向，
+        // y轴正方向为垂直子弹射出方向向下，
+        // x轴正方向为面向枪口时的左侧。
+        fp32 x_in_gimbal = autoaim_target.x_in_gimbal;
+        fp32 y_in_gimbal = autoaim_target.y_in_gimbal;
+        fp32 z_in_gimbal = autoaim_target.z_in_gimbal;
 
-    // 世界坐标系:
-    // 右手直角坐标系。
-    // 原点与云台坐标系重合。
-    // y轴正方向为重力加速度方向。
-    // 由于是绝对坐标系，x轴、z轴不好描述，
-    // 可以类比为x轴始终指向北。
-    // 当底盘静止或小陀螺时，可以作为惯性参考系。
-    fp32 x_in_world;
-    fp32 y_in_world;
-    fp32 z_in_world;
+        // 世界坐标系:
+        // 右手直角坐标系。
+        // 原点与云台坐标系重合。
+        // y轴正方向为重力加速度方向。
+        // 由于是绝对坐标系，x轴、z轴不好描述，
+        // 可以类比为x轴始终指向北。
+        // 当底盘静止或小陀螺时，可以作为惯性参考系。
+        //
+        // 将云台坐标系转换为世界坐标系：
+        //
+        // 云台坐标系是如何从世界坐标系变换而来的：
+        //     初始：云台坐标系和世界坐标系（0系）重合。
+        //     yaw轴电机旋转：云台坐标系绕世界坐标系y轴旋转，
+        //                   角度为gimbal_absolute_yaw(rad)，
+        //                   符号符合右手螺旋。
+        //                   该云台坐标系记为1系。
+        //     pitch轴电机旋转：云台坐标系绕1系x轴旋转，
+        //                     角度为gimbal_absolute_pitch(rad)，
+        //                     符号符合右手螺旋。
+        //                     获得2系。
+        //     这里可以看出云台使用的欧拉角旋转为内旋。
+        //
+        // 可得公式：p0 = Ry * Rx * p2
+        // R_y为绕y轴旋转矩阵，R_x为绕x轴旋转矩阵，
+        // 通过该公式，可以将击打目标在云台坐标系下的坐标p2，
+        // 转变为目标在世界坐标系下的坐标p0.
+        fp32 sin_y = sin(gimbal_absolute_yaw);
+        fp32 cos_y = cos(gimbal_absolute_yaw);
+        fp32 sin_x = sin(gimbal_absolute_pitch);
+        fp32 cos_x = cos(gimbal_absolute_pitch);
+        autoaim_target.x_in_world = x_in_gimbal * cos_y + y_in_gimbal * sin_y * sin_x + z_in_gimbal * sin_y * cos_x;
+        autoaim_target.y_in_world = x_in_gimbal * 0.0f + y_in_gimbal * cos_x + z_in_gimbal * (-sin_x);
+        autoaim_target.z_in_world = x_in_gimbal * (-sin_y) + y_in_gimbal * cos_y * sin_x + z_in_gimbal * cos_y * cos_x;
 
-    // 将云台坐标系转换为世界坐标系：
-    //
-    // 云台坐标系是如何从世界坐标系变换而来的：
-    //     初始：云台坐标系和世界坐标系（0系）重合。
-    //     yaw轴电机旋转：云台坐标系绕世界坐标系y轴旋转，
-    //                   角度为gimbal_absolute_yaw(rad)，
-    //                   符号符合右手螺旋。
-    //                   该云台坐标系记为1系。
-    //     pitch轴电机旋转：云台坐标系绕1系x轴旋转，
-    //                     角度为gimbal_absolute_pitch(rad)，
-    //                     符号符合右手螺旋。
-    //                     获得2系。
-    //     这里可以看出云台使用的欧拉角旋转为内旋。
-    //
-    // 可得公式：p0 = Ry * Rx * p2
-    // R_y为绕y轴旋转矩阵，R_x为绕x轴旋转矩阵，
-    // 通过该公式，可以将击打目标在云台坐标系下的坐标p2，
-    // 转变为目标在世界坐标系下的坐标p0.
-    fp32 sin_y = sin(gimbal_absolute_yaw);
-    fp32 cos_y = cos(gimbal_absolute_yaw);
-    fp32 sin_x = sin(gimbal_absolute_pitch);
-    fp32 cos_x = cos(gimbal_absolute_pitch);
-    x_in_world = x_in_gimbal * cos_y + y_in_gimbal * sin_y * sin_x + z_in_gimbal * sin_y * cos_x;
-    y_in_world = x_in_gimbal * 0.0 + y_in_gimbal * cos_x + z_in_gimbal * (-sin_x);
-    z_in_world = x_in_gimbal * (-sin_y) + y_in_gimbal * cos_y * sin_x + z_in_gimbal * cos_y * cos_x;
+        // 摄像头两帧时间间隔是5ms
+        autoaim_target.velocity_x = (autoaim_target.x_in_world - autoaim_target.last_x_in_world) / 0.005f;
+        autoaim_target.velocity_y = (autoaim_target.y_in_world - autoaim_target.last_y_in_world) / 0.005f;
+        autoaim_target.velocity_z = (autoaim_target.z_in_world - autoaim_target.last_z_in_world) / 0.005f;
+
+        autoaim_target.last_x_in_world = autoaim_target.x_in_world;
+        autoaim_target.last_y_in_world = autoaim_target.y_in_world;
+        autoaim_target.last_z_in_world = autoaim_target.z_in_world;
+
+        autoaim_target.is_latest = 0;
+    }
+    else
+    {
+        // 电机每1ms控制一次
+        autoaim_target.x_in_world += autoaim_target.velocity_x * 0.001f;
+        autoaim_target.y_in_world += autoaim_target.velocity_y * 0.001f;
+        autoaim_target.z_in_world += autoaim_target.velocity_z * 0.001f;
+    }
 
     fp32 xz_length;
-    arm_sqrt_f32(x_in_world * x_in_world + z_in_world * z_in_world, &xz_length);
-    *yaw_set = atan2(x_in_world, z_in_world);
-    *pitch_set = atan2(y_in_world, xz_length);
+    arm_sqrt_f32(autoaim_target.x_in_world * autoaim_target.x_in_world + autoaim_target.z_in_world * autoaim_target.z_in_world, &xz_length);
+    *yaw_set = atan2(autoaim_target.x_in_world, autoaim_target.z_in_world);
+    *pitch_set = atan2(autoaim_target.y_in_world, xz_length);
 }
 
 void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num)
@@ -260,6 +298,7 @@ uint8_t unpack_frame(uint8_t *autoaim_buf)
     autoaim_target.x_in_gimbal = frame.x_in_gimbal;
     autoaim_target.y_in_gimbal = frame.y_in_gimbal;
     autoaim_target.z_in_gimbal = frame.z_in_gimbal;
+    autoaim_target.is_latest = 1;
     return 1;
 }
 
