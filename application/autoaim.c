@@ -171,6 +171,13 @@ void set_autoaim_angle(fp32 *yaw_set, fp32 *pitch_set, fp32 gimbal_absolute_yaw,
         autoaim_target.velocity_y = (autoaim_target.y_in_world - autoaim_target.last_y_in_world) / 0.005f;
         autoaim_target.velocity_z = (autoaim_target.z_in_world - autoaim_target.last_z_in_world) / 0.005f;
 
+        // 速度异常大
+        if (autoaim_target.velocity_x > 1.0f || autoaim_target.velocity_y > 1.0f || autoaim_target.velocity_z > 1.0f) {
+            autoaim_target.velocity_x = 0.0f;
+            autoaim_target.velocity_y = 0.0f;
+            autoaim_target.velocity_z = 0.0f;
+        }
+
         autoaim_target.last_x_in_world = autoaim_target.x_in_world;
         autoaim_target.last_y_in_world = autoaim_target.y_in_world;
         autoaim_target.last_z_in_world = autoaim_target.z_in_world;
