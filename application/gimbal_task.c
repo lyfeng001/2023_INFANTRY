@@ -298,6 +298,8 @@ gimbal_control_t gimbal_control;
 // 发送的电机电流
 static int16_t yaw_can_set_current = 0, pitch_can_set_current = 0, shoot_can_set_current = 0; //,cover_can_set_current = 0;
 
+static uint8_t send_count = 0;
+
 /**
  * @brief          gimbal task, osDelay GIMBAL_CONTROL_TIME (1ms)
  * @param[in]      pvParameters: null
@@ -368,6 +370,15 @@ void gimbal_task(void const *pvParameters)
 #if GIMBAL_TEST_MODE
 		J_scope_gimbal_test();
 #endif
+
+
+		send_count++;
+		if (send_count == 5) // 5ms向上位机发一次数据
+		{
+			send_to_computer(gimbal_control.gimbal_yaw_motor.absolute_angle, gimbal_control.gimbal_pitch_motor.absolute_angle);
+			send_count = 0;
+		}
+
 
 		vTaskDelay(GIMBAL_CONTROL_TIME);
 
@@ -807,7 +818,7 @@ static void gimbal_mode_change_control_transit(gimbal_control_t *gimbal_mode_cha
 	{
 		gimbal_mode_change->gimbal_yaw_motor.relative_angle_set = gimbal_mode_change->gimbal_yaw_motor.relative_angle;
 	}
-	
+
 	gimbal_mode_change->gimbal_yaw_motor.last_gimbal_motor_mode = gimbal_mode_change->gimbal_yaw_motor.gimbal_motor_mode;
 
 	// pitch电机状态机切换保存数据
@@ -847,7 +858,7 @@ static void gimbal_set_control(gimbal_control_t *set_control)
 	fp32 add_pitch_angle = 0.0f;
 
 	gimbal_behaviour_control_set(&add_yaw_angle, &add_pitch_angle, set_control);
-	
+
 	// yaw电机模式控制
 	if (set_control->gimbal_yaw_motor.gimbal_motor_mode == GIMBAL_MOTOR_RAW)
 	{
@@ -1073,7 +1084,7 @@ static void gimbal_motor_absolute_angle_control(gimbal_motor_t *gimbal_motor)
 		return;
 	}
 	// 角度环，速度环串级pid调试
-	gimbal_motor->motor_gyro_set = gimbal_PID_calc(&gimbal_motor->gimbal_motor_absolute_angle_pid, gimbal_motor->absolute_angle, gimbal_motor->absolute_angle_set, gimbal_motor->motor_gyro);
+	gimbal_motor->motor_gyro_set = gimbal_PID_calc(&gimbal_motor->gimbal_motor_absolute_angle_pid, gimbal_motor->absolute_angle, gimbal_motor->absolute_angle_set, -gimbal_motor->motor_gyro);
 	gimbal_motor->current_set = PID_calc(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro, gimbal_motor->motor_gyro_set);
 	//		gimbal_motor->motor_gyro_set = gimbal_PID_calc_oldmethod(&gimbal_motor->gimbal_motor_absolute_angle_pid, gimbal_motor->absolute_angle, gimbal_motor->absolute_angle_set);
 	//		gimbal_motor->current_set = PID_calc_oldmethod(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro * 57.3f, gimbal_motor->motor_gyro_set / 20.0f);

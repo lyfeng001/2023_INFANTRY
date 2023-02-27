@@ -518,7 +518,7 @@ static void gimbal_behavour_set(gimbal_control_t *gimbal_mode_set)
         }
         else
         {
-            gimbal_behaviour = GIMBAL_ABSOLUTE_ANGLE;
+            gimbal_behaviour = GIMBAL_AUTO;
         }
     }
     else if (switch_is_up(gimbal_mode_set->gimbal_rc_ctrl->rc.s[GIMBAL_MODE_CHANNEL]))
@@ -760,9 +760,9 @@ static void gimbal_auto_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control_t *
     {
         return;
     }
-    fp32 gimbal_absolute_yaw = gimbal_control_set->gimbal_yaw_motor.absolute_angle;
-    fp32 gimbal_absolute_pitch = gimbal_control_set->gimbal_pitch_motor.absolute_angle;
-    set_autoaim_angle(yaw, pitch, gimbal_absolute_yaw, gimbal_absolute_pitch);
+    fp32 absolute_yaw_set = gimbal_control_set->gimbal_yaw_motor.absolute_angle_set;
+    fp32 absolute_pitch_set = gimbal_control_set->gimbal_pitch_motor.absolute_angle_set;
+    set_autoaim_angle(yaw, pitch, absolute_yaw_set, absolute_pitch_set);
 }
 
 /**

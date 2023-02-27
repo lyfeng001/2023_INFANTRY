@@ -12,6 +12,7 @@
 #include "struct_typedef.h"
 
 void autoaim_init(void);
-void set_autoaim_angle(fp32 *yaw_set, fp32 *pitch_set, fp32 gimbal_absolute_yaw, fp32 gimbal_absolute_pitch);
+void set_autoaim_angle(fp32 *add_yaw_set, fp32 *add_pitch_set, fp32 absolute_yaw_set, fp32 absolute_pitch_set);
+void send_to_computer(fp32 absolute_yaw, fp32 absolute_pitch);
 
 #endif
