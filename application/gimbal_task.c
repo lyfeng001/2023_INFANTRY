@@ -375,7 +375,7 @@ void gimbal_task(void const *pvParameters)
 		send_count++;
 		if (send_count == 5) // 5ms向上位机发一次数据
 		{
-			send_to_computer(gimbal_control.gimbal_yaw_motor.absolute_angle, gimbal_control.gimbal_pitch_motor.absolute_angle);
+			send_to_computer(-gimbal_control.gimbal_yaw_motor.absolute_angle, gimbal_control.gimbal_pitch_motor.absolute_angle);
 			send_count = 0;
 		}
 

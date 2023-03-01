@@ -2,7 +2,7 @@
  * @Author: TJSP_2022_TY
  * @Date:   2021-11-28
  * @Last Modified by: XiaoYoung
- * @Last Modified time: 2023-01-13
+ * @Last Modified time: 2023-02-27
  * @brief: port from RM_standard_robot remote_control. uart1_dma_rx has been reconfigured in Cube. use double dma buffer. Added Kalmanfilter for prediction.
  */
 
@@ -13,32 +13,35 @@
 #include "AHRS_middleware.h"
 #include "bsp_usart.h"
 
-#define AUTOAIM_FRAME_LEN 22
+#define AUTOAIM_FRAME_LEN 27
 #define AUTOAIM_FRAME_BUF AUTOAIM_FRAME_LEN * 2
-#define AUTO_FRAME_HEAD 0xf1
-#define AUTO_FRAME_END 0xf2
+#define AUTOAIM_FRAME_HEAD 0xf1
 
 #pragma pack(1)
 typedef struct
 {
-    uint8_t head;         // 1 byte
-    uint16_t timestamp;   // 2 byte
-    float yaw_in_world;   // 4 byte degree
-    float pitch_in_world; // 4 byte degree
-    float extra_float;    // 4 byte
-    uint8_t state;        // 1 byte
-    uint16_t time;        // 2 byte
-    uint8_t extra[2];     // 2 byte
-    uint8_t crc8_check;   // 1 byte
-    uint8_t end;          // 1 byte
+    uint8_t head;       // 1 byte
+    fp32 x_in_world;    // 4 byte mm 发送时复用为yaw degree
+    fp32 y_in_world;    // 4 byte mm 发送时复用为pitch degree
+    fp32 z_in_world;    // 4 byte mm
+    fp32 vx_in_world;   // 4 byte mm/ms
+    fp32 vy_in_world;   // 4 byte mm/ms
+    fp32 vz_in_world;   // 4 byte mm/ms
+    uint8_t flag;      // 1 byte
+    uint8_t crc8_check; // 1 byte
 } frame_t;
 #pragma pack()
 
 typedef struct
 {
-    fp32 yaw_in_world;   // rad
-    fp32 pitch_in_world; // rad
-    bool_t is_latest;
+    fp32 x_in_world;  // mm
+    fp32 y_in_world;  // mm
+    fp32 z_in_world;  // mm
+    fp32 vx_in_world; // mm/ms
+    fp32 vy_in_world; // mm/ms
+    fp32 vz_in_world; // mm/ms
+    uint8_t flag;
+    uint8_t outdated_count;
 } autoaim_target_t;
 
 extern UART_HandleTypeDef huart1;
@@ -56,17 +59,40 @@ void pack_frame(uint8_t *buff, frame_t *frame);
 
 void autoaim_init(void)
 {
-    autoaim_target.yaw_in_world = 0.0;
-    autoaim_target.pitch_in_world = 0.0;
-    autoaim_target.is_latest = 0;
+    autoaim_target.x_in_world = 0.0f;
+    autoaim_target.y_in_world = 0.0f;
+    autoaim_target.z_in_world = 0.0f;
+    autoaim_target.vx_in_world = 0.0f;
+    autoaim_target.vy_in_world = 0.0f;
+    autoaim_target.vz_in_world = 0.0f;
+    autoaim_target.outdated_count = 0;
     usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_BUF);
 }
 
 void set_autoaim_angle(fp32 *add_yaw_set, fp32 *add_pitch_set, fp32 absolute_yaw_set, fp32 absolute_pitch_set)
 {
-    *add_yaw_set = autoaim_target.yaw_in_world - absolute_yaw_set;
-    *add_pitch_set = 0.0f; // 机械没装平衡补偿，先禁掉
-    // *add_pitch_set = autoaim_target.pitch_in_world - absolute_pitch_set;
+    fp32 target_yaw_in_world = 0.0f;
+    fp32 target_pitch_in_world = 0.0f;
+
+    // if (autoaim_target.outdated_count < 20)
+    // {
+    //     autoaim_target.x_in_world += autoaim_target.vx_in_world;
+    //     autoaim_target.y_in_world += autoaim_target.vy_in_world;
+    //     autoaim_target.z_in_world += autoaim_target.vz_in_world;
+    //     autoaim_target.outdated_count++;
+    // }
+
+    // 电控角度正方向：
+    // yaw：操作手视角下，枪管向左为正方向
+    // pitch: 抬枪为正方向
+    fp32 xz_length;
+    arm_sqrt_f32(autoaim_target.x_in_world * autoaim_target.x_in_world + autoaim_target.z_in_world * autoaim_target.z_in_world, &xz_length);
+    target_yaw_in_world = -atan2(autoaim_target.x_in_world, autoaim_target.z_in_world);
+    target_pitch_in_world = -atan2(autoaim_target.y_in_world, xz_length);
+
+    *add_yaw_set = target_yaw_in_world - absolute_yaw_set;
+    *add_pitch_set = target_pitch_in_world - absolute_pitch_set;
+    // *add_pitch_set = 0.0f; // 机械没装平衡补偿，先禁掉
 }
 
 void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num)
@@ -167,25 +193,29 @@ void USART1_IRQHandler(void)
 uint8_t unpack_frame(uint8_t *autoaim_buf)
 {
     memcpy((uint8_t *)&frame_rx, autoaim_buf, AUTOAIM_FRAME_LEN);
-    uint8_t crc8_check = get_CRC8_check_sum((uint8_t *)&frame_rx, AUTOAIM_FRAME_LEN - 2, 0xff);
-    if (frame_rx.head != AUTO_FRAME_HEAD || frame_rx.end != AUTO_FRAME_END || frame_rx.crc8_check != crc8_check)
+    uint8_t crc8_check = get_CRC8_check_sum((uint8_t *)&frame_rx, AUTOAIM_FRAME_LEN - 1, 0xff);
+    if (frame_rx.head != AUTOAIM_FRAME_HEAD || frame_rx.crc8_check != crc8_check)
     {
         return 0;
     }
 
-    autoaim_target.yaw_in_world = frame_rx.yaw_in_world / 57.3f;
-    autoaim_target.pitch_in_world = frame_rx.pitch_in_world / 57.3f;
-    autoaim_target.is_latest = 1;
+    autoaim_target.x_in_world = frame_rx.x_in_world;
+    autoaim_target.y_in_world = frame_rx.y_in_world;
+    autoaim_target.z_in_world = frame_rx.z_in_world;
+    autoaim_target.vx_in_world = frame_rx.vx_in_world;
+    autoaim_target.vy_in_world = frame_rx.vy_in_world;
+    autoaim_target.vz_in_world = frame_rx.vz_in_world;
+    autoaim_target.flag = frame_rx.flag;
+    autoaim_target.outdated_count = 0; // 新鲜出炉的数据
     return 1;
 }
 
 void send_to_computer(fp32 absolute_yaw, fp32 absolute_pitch)
 {
-    frame_tx.head = AUTO_FRAME_HEAD;
-    frame_tx.end = AUTO_FRAME_END;
+    frame_tx.head = AUTOAIM_FRAME_HEAD;
 
-    frame_tx.yaw_in_world = absolute_yaw * 57.3f;
-    frame_tx.pitch_in_world = absolute_pitch * 57.3f;
+    frame_tx.x_in_world = absolute_yaw * 57.3f;
+    frame_tx.y_in_world = absolute_pitch * 57.3f;
 
     pack_frame(autoaim_frame_tx_buf, &frame_tx);
     usart1_tx_dma_enable(autoaim_frame_tx_buf, AUTOAIM_FRAME_LEN);
