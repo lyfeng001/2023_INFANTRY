@@ -2,7 +2,7 @@
  * @Author: TJSP_2022_TY
  * @Date:   2021-11-28
  * @Last Modified by: XiaoYoung
- * @Last Modified time: 2023-02-27
+ * @Last Modified time: 2023-03-02
  * @brief: port from RM_standard_robot remote_control. uart1_dma_rx has been reconfigured in Cube. use double dma buffer. Added Kalmanfilter for prediction.
  */
 
@@ -57,7 +57,7 @@ void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num
 uint8_t unpack_frame(uint8_t *autoaim_buf);
 void pack_frame(uint8_t *buff, frame_t *frame);
 
-void autoaim_init(void)
+void autoaim_target_reset(void)
 {
     autoaim_target.x_in_world = 0.0f;
     autoaim_target.y_in_world = 0.0f;
@@ -65,34 +65,46 @@ void autoaim_init(void)
     autoaim_target.vx_in_world = 0.0f;
     autoaim_target.vy_in_world = 0.0f;
     autoaim_target.vz_in_world = 0.0f;
-    autoaim_target.outdated_count = 0;
+    autoaim_target.outdated_count = 100;
+}
+
+void autoaim_init(void)
+{
+    autoaim_target_reset();
     usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_BUF);
 }
 
 void set_autoaim_angle(fp32 *add_yaw_set, fp32 *add_pitch_set, fp32 absolute_yaw_set, fp32 absolute_pitch_set)
 {
-    fp32 target_yaw_in_world = 0.0f;
-    fp32 target_pitch_in_world = 0.0f;
+    if (autoaim_target.outdated_count < 100)
+    {
+        fp32 target_yaw_in_world = 0.0f;
+        fp32 target_pitch_in_world = 0.0f;
+        // if (autoaim_target.outdated_count < 20)
+        // {
+        //     autoaim_target.x_in_world += autoaim_target.vx_in_world;
+        //     autoaim_target.y_in_world += autoaim_target.vy_in_world;
+        //     autoaim_target.z_in_world += autoaim_target.vz_in_world;
+        //     autoaim_target.outdated_count++;
+        // }
 
-    // if (autoaim_target.outdated_count < 20)
-    // {
-    //     autoaim_target.x_in_world += autoaim_target.vx_in_world;
-    //     autoaim_target.y_in_world += autoaim_target.vy_in_world;
-    //     autoaim_target.z_in_world += autoaim_target.vz_in_world;
-    //     autoaim_target.outdated_count++;
-    // }
+        // 电控角度正方向：
+        // yaw：操作手视角下，枪管向左为正方向
+        // pitch: 抬枪为正方向
+        fp32 xz_length;
+        arm_sqrt_f32(autoaim_target.x_in_world * autoaim_target.x_in_world + autoaim_target.z_in_world * autoaim_target.z_in_world, &xz_length);
+        target_yaw_in_world = -atan2(autoaim_target.x_in_world, autoaim_target.z_in_world);
+        target_pitch_in_world = -atan2(autoaim_target.y_in_world, xz_length);
 
-    // 电控角度正方向：
-    // yaw：操作手视角下，枪管向左为正方向
-    // pitch: 抬枪为正方向
-    fp32 xz_length;
-    arm_sqrt_f32(autoaim_target.x_in_world * autoaim_target.x_in_world + autoaim_target.z_in_world * autoaim_target.z_in_world, &xz_length);
-    target_yaw_in_world = -atan2(autoaim_target.x_in_world, autoaim_target.z_in_world);
-    target_pitch_in_world = -atan2(autoaim_target.y_in_world, xz_length);
-
-    *add_yaw_set = target_yaw_in_world - absolute_yaw_set;
-    *add_pitch_set = target_pitch_in_world - absolute_pitch_set;
-    // *add_pitch_set = 0.0f; // 机械没装平衡补偿，先禁掉
+        *add_yaw_set = target_yaw_in_world - absolute_yaw_set;
+        *add_pitch_set = target_pitch_in_world - absolute_pitch_set;
+        // *add_pitch_set = 0.0f; // 机械没装平衡补偿，先禁掉
+    }
+    else
+    {
+        *add_yaw_set = 0.0f;
+        *add_pitch_set = 0.0f;
+    }
 }
 
 void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num)

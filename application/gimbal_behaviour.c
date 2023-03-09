@@ -539,6 +539,10 @@ static void gimbal_behavour_set(gimbal_control_t *gimbal_mode_set)
         {
             gimbal_behaviour = GIMBAL_INIT;
         }
+        else if (last_gimbal_behaviour != GIMBAL_AUTO && gimbal_behaviour == GIMBAL_AUTO)
+        {
+            autoaim_target_reset();
+        }
         last_gimbal_behaviour = gimbal_behaviour;
     }
 }
