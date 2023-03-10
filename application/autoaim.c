@@ -13,9 +13,10 @@
 #include "AHRS_middleware.h"
 #include "bsp_usart.h"
 
-#define AUTOAIM_FRAME_LEN 27
+#define AUTOAIM_FRAME_LEN 28
 #define AUTOAIM_FRAME_BUF AUTOAIM_FRAME_LEN * 2
 #define AUTOAIM_FRAME_HEAD 0xf1
+#define AUTOAIM_FRAME_END 0xf2
 
 #pragma pack(1)
 typedef struct
@@ -27,8 +28,9 @@ typedef struct
     fp32 vx_in_world;   // 4 byte mm/ms
     fp32 vy_in_world;   // 4 byte mm/ms
     fp32 vz_in_world;   // 4 byte mm/ms
-    uint8_t flag;      // 1 byte
+    uint8_t flag;       // 1 byte
     uint8_t crc8_check; // 1 byte
+    uint8_t end;        // 1 byte
 } frame_t;
 #pragma pack()
 
@@ -205,7 +207,7 @@ void USART1_IRQHandler(void)
 uint8_t unpack_frame(uint8_t *autoaim_buf)
 {
     memcpy((uint8_t *)&frame_rx, autoaim_buf, AUTOAIM_FRAME_LEN);
-    uint8_t crc8_check = get_CRC8_check_sum((uint8_t *)&frame_rx, AUTOAIM_FRAME_LEN - 1, 0xff);
+    uint8_t crc8_check = get_CRC8_check_sum((uint8_t *)&frame_rx, AUTOAIM_FRAME_LEN - 2, 0xff);
     if (frame_rx.head != AUTOAIM_FRAME_HEAD || frame_rx.crc8_check != crc8_check)
     {
         return 0;
@@ -225,9 +227,12 @@ uint8_t unpack_frame(uint8_t *autoaim_buf)
 void send_to_computer(fp32 absolute_yaw, fp32 absolute_pitch)
 {
     frame_tx.head = AUTOAIM_FRAME_HEAD;
+    frame_tx.end = AUTOAIM_FRAME_END;
 
-    frame_tx.x_in_world = absolute_yaw * 57.3f;
+    // frame_tx.x_in_world = absolute_yaw * 57.3f;
+    frame_tx.x_in_world = absolute_yaw;
     frame_tx.y_in_world = absolute_pitch * 57.3f;
+    frame_tx.flag = 0;
 
     pack_frame(autoaim_frame_tx_buf, &frame_tx);
     usart1_tx_dma_enable(autoaim_frame_tx_buf, AUTOAIM_FRAME_LEN);
