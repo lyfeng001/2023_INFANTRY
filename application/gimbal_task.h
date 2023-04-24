@@ -35,87 +35,32 @@
 // pitch speed close-loop PID params, max out and max iout
 // pitch 速度环 PID参数以及 PID最大输出，积分输出
 
-#define INFANTRY_5
+#define INFANTRY_3
 
+
+//****************************************************4
 #ifdef INFANTRY_4
 
 #define PITCH_SPEED_PID_KP 4500.0f // 2900.0f
 #define PITCH_SPEED_PID_KI 60.0f
-#define PITCH_SPEED_PID_KD 0.0f // 0.0f
+#define PITCH_SPEED_PID_KD 0.0f 
 #define PITCH_SPEED_PID_MAX_OUT 30000.0f
 #define PITCH_SPEED_PID_MAX_IOUT 10000.0f
 
 // yaw speed close-loop PID params, max out and max iout
 // yaw 速度环 PID参数以及 PID最大输出，积分输出
 
-#define YAW_SPEED_PID_KP 10000.0f	   // 3600.0f//2500.0f//3600.0f
-#define YAW_SPEED_PID_KI 40.5f		   // 20.0f//1.5f//20.0f
-#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
-#define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 26.0f // 20.0f//26.0f
-#define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f//0.0f
-#define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 3.4f//0.3f
+#define YAW_SPEED_PID_KP 10000.0f	   
+#define YAW_SPEED_PID_KI 40.5f		   // 20.0f
+#define YAW_SPEED_PID_KD 0.0f		  
+#define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 26.0f
+#define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  
+#define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  
 
 #define YAW_SPEED_PID_MAX_OUT 30000.0f
 #define YAW_SPEED_PID_MAX_IOUT 5000.0f
 #define YAW_GYRO_ABSOLUTE_PID_MAX_OUT 10.0f
 #define YAW_GYRO_ABSOLUTE_PID_MAX_IOUT 0.0f
-
-#endif
-
-#ifdef INFANTRY_3
-
-#define PITCH_SPEED_PID_KP 4500.0f
-#define PITCH_SPEED_PID_KI 60.0f
-#define PITCH_SPEED_PID_KD 1000.0f
-#define PITCH_SPEED_PID_MAX_OUT 30000.0f
-#define PITCH_SPEED_PID_MAX_IOUT 10000.0f
-
-// yaw speed close-loop PID params, max out and max iout
-// yaw 速度环 PID参数以及 PID最大输出，积分输出
-
-#define YAW_SPEED_PID_KP 10000.0f	   // 10000.0f//2500.0f//3600.0f
-#define YAW_SPEED_PID_KI 40.5f		   // 40.0f//1.5f//20.0f
-#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
-#define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 20.76f // 20.0f//26.0f
-#define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f// 0.0f//0.0f
-#define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 0.15f// 3.4f//0.3f
-
-#define YAW_SPEED_PID_MAX_OUT 30000.0f
-#define YAW_SPEED_PID_MAX_IOUT 5000.0f
-#define YAW_GYRO_ABSOLUTE_PID_MAX_OUT 10.0f
-#define YAW_GYRO_ABSOLUTE_PID_MAX_IOUT 0.0f
-
-#endif
-
-#ifdef INFANTRY_5
-
-#define PITCH_SPEED_PID_KP 7000.0f // 2900.0f
-#define PITCH_SPEED_PID_KI 185.0f
-#define PITCH_SPEED_PID_KD 10.0f // 0.0f
-#define PITCH_SPEED_PID_MAX_OUT 30000.0f
-#define PITCH_SPEED_PID_MAX_IOUT 10000.0f
-
-// yaw speed close-loop PID params, max out and max iout
-// yaw 速度环 PID参数以及 PID最大输出，积分输出
-
-#define YAW_SPEED_PID_KP 12000.0f	   // 3600.0f//2500.0f//3600.0f
-#define YAW_SPEED_PID_KI 40.5f		   // 20.0f//1.5f//20.0f
-#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
-#define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 26.0f // 20.0f//26.0f
-#define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f//0.0f
-#define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 3.4f//0.3f
-
-#define YAW_SPEED_PID_MAX_OUT 30000.0f
-#define YAW_SPEED_PID_MAX_IOUT 5000.0f
-#define YAW_GYRO_ABSOLUTE_PID_MAX_OUT 10.0f
-#define YAW_GYRO_ABSOLUTE_PID_MAX_IOUT 0.0f
-
-#endif
-
-// pitch gyro angle close-loop PID params, max out and max iout
-// pitch 角度环 角度由陀螺仪解算 PID参数以及 PID最大输出，积分输出
-
-#ifdef INFANTRY_4
 
 #define PITCH_GYRO_ABSOLUTE_PID_KP 15.0f
 #define PITCH_GYRO_ABSOLUTE_PID_KI 0.0f
@@ -162,9 +107,6 @@
 
 #define YAW_RC_SEN -0.000005f
 #define PITCH_RC_SEN -0.000006f // 0.005
-
-#define YAW_MOUSE_SEN 0.00005f
-#define PITCH_MOUSE_SEN 0.00015f
 
 #define YAW_ENCODE_SEN 0.01f
 #define PITCH_ENCODE_SEN 0.01f
@@ -215,15 +157,38 @@
 #define MOTOR_ECD_TO_RAD 0.000766990394f //      2*  PI  /8192
 #endif
 
-#define MIDDLE_YAW 4174 // 4174是四号步兵   //4401
-#define MIDDLE_PITCH 7344
+#define MIDDLE_YAW 1513 
+#define MIDDLE_PITCH 4035
 
-#define MAX_PITCH 7780 // 6200    //11.26改的没试
-#define MIN_PITCH 6743
+#define MAX_PITCH 4603 
+#define MIN_PITCH 3383
 
 #endif
+//****************************************************4
 
-#ifdef INFANTRY_3
+//****************************************************5
+#ifdef INFANTRY_5
+
+#define PITCH_SPEED_PID_KP 4500.0f
+#define PITCH_SPEED_PID_KI 60.0f
+#define PITCH_SPEED_PID_KD 1000.0f
+#define PITCH_SPEED_PID_MAX_OUT 30000.0f
+#define PITCH_SPEED_PID_MAX_IOUT 10000.0f
+
+// yaw speed close-loop PID params, max out and max iout
+// yaw 速度环 PID参数以及 PID最大输出，积分输出
+
+#define YAW_SPEED_PID_KP 10000.0f	   // 10000.0f//2500.0f//3600.0f
+#define YAW_SPEED_PID_KI 40.5f		   // 40.0f//1.5f//20.0f
+#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
+#define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 20.76f // 20.0f//26.0f
+#define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  // 0.0f// 0.0f//0.0f
+#define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  // 0.15f// 3.4f//0.3f
+
+#define YAW_SPEED_PID_MAX_OUT 30000.0f
+#define YAW_SPEED_PID_MAX_IOUT 5000.0f
+#define YAW_GYRO_ABSOLUTE_PID_MAX_OUT 10.0f
+#define YAW_GYRO_ABSOLUTE_PID_MAX_IOUT 0.0f
 
 #define PITCH_GYRO_ABSOLUTE_PID_KP 15.0f
 #define PITCH_GYRO_ABSOLUTE_PID_KI 0.0f
@@ -270,9 +235,6 @@
 
 #define YAW_RC_SEN -0.000005f
 #define PITCH_RC_SEN -0.000006f // 0.005
-
-#define YAW_MOUSE_SEN 0.00005f
-#define PITCH_MOUSE_SEN 0.00015f
 
 #define YAW_ENCODE_SEN 0.01f
 #define PITCH_ENCODE_SEN 0.01f
@@ -326,12 +288,35 @@
 #define MIDDLE_YAW 6228
 #define MIDDLE_PITCH 5864
 
-#define MAX_PITCH 6528 // 6200    //11.26改的没试
+#define MAX_PITCH 6528 
 #define MIN_PITCH 5200
 
 #endif
+//****************************************************5
 
-#ifdef INFANTRY_5
+//****************************************************3
+#ifdef INFANTRY_3
+
+#define PITCH_SPEED_PID_KP 7000.0f // 2900.0f
+#define PITCH_SPEED_PID_KI 185.0f
+#define PITCH_SPEED_PID_KD 10.0f // 0.0f
+#define PITCH_SPEED_PID_MAX_OUT 30000.0f
+#define PITCH_SPEED_PID_MAX_IOUT 10000.0f
+
+// yaw speed close-loop PID params, max out and max iout
+// yaw 速度环 PID参数以及 PID最大输出，积分输出
+
+#define YAW_SPEED_PID_KP 12000.0f	   // 3600.0f//2500.0f//3600.0f
+#define YAW_SPEED_PID_KI 40.5f		   // 20.0f//1.5f//20.0f
+#define YAW_SPEED_PID_KD 0.0f		   // 0.0f//0.0f
+#define YAW_GYRO_ABSOLUTE_PID_KP 20.0f // 26.0f // 20.0f//26.0f
+#define YAW_GYRO_ABSOLUTE_PID_KI 0.0f  
+#define YAW_GYRO_ABSOLUTE_PID_KD 0.0f  
+
+#define YAW_SPEED_PID_MAX_OUT 30000.0f
+#define YAW_SPEED_PID_MAX_IOUT 5000.0f
+#define YAW_GYRO_ABSOLUTE_PID_MAX_OUT 10.0f
+#define YAW_GYRO_ABSOLUTE_PID_MAX_IOUT 0.0f
 
 #define PITCH_GYRO_ABSOLUTE_PID_KP 20.0f
 #define PITCH_GYRO_ABSOLUTE_PID_KI 0.0f
@@ -378,9 +363,6 @@
 
 #define YAW_RC_SEN -0.000005f
 #define PITCH_RC_SEN -0.000006f // 0.005
-
-#define YAW_MOUSE_SEN 0.00005f
-#define PITCH_MOUSE_SEN 0.00015f
 
 #define YAW_ENCODE_SEN 0.01f
 #define PITCH_ENCODE_SEN 0.01f
@@ -431,19 +413,23 @@
 #define MOTOR_ECD_TO_RAD 0.000766990394f //      2*  PI  /8192
 #endif
 
-#define MIDDLE_YAW 4530 // 4174是四号步兵   //4401
-#define MIDDLE_PITCH 4597
+#define MIDDLE_YAW 434
+#define MIDDLE_PITCH 6626
 
-#define MAX_PITCH 5217 // 6200    //11.26改的没试
-#define MIN_PITCH 3959
+#define MAX_PITCH 7120
+#define MIN_PITCH 6038
 
 #endif
+//****************************************************3
 
 // 是否有滑环，有为1没有为0
 #define SLIP_RING 1
 
 #define SWING_LEFT_KEY KEY_PRESSED_OFFSET_Q
 #define SWING_RIGHT_KEY KEY_PRESSED_OFFSET_E
+
+#define YAW_MOUSE_SEN 0.000007f
+#define PITCH_MOUSE_SEN 0.000025f		//鼠标灵敏度在这里
 
 typedef enum
 {
@@ -502,6 +488,7 @@ typedef struct
 
 } gimbal_motor_t;
 
+
 typedef struct
 {
 	fp32 max_yaw;
@@ -524,6 +511,7 @@ typedef struct
 	gimbal_motor_t gimbal_pitch_motor;
 	gimbal_step_cali_t gimbal_cali;
 } gimbal_control_t;
+
 
 /**
  * @brief          return yaw motor data point

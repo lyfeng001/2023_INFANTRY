@@ -69,7 +69,7 @@ typedef struct
   * @retval         none
   */
 extern void PID_init(pid_type_def *pid, uint8_t mode, const fp32 PID[3], fp32 max_out, fp32 max_iout);
-extern void PID_init_oldmethod(pid_type_def *pid, uint8_t mode, const fp32 PID[3], fp32 max_out, fp32 max_iout, fp32 max_dout, fp32 dT);
+//extern void PID_init_oldmethod(pid_type_def *pid, uint8_t mode, const fp32 PID[3], fp32 max_out, fp32 max_iout, fp32 max_dout, fp32 dT);
 /**
   * @brief          pid calculate 
   * @param[out]     pid: PID struct data point
@@ -85,7 +85,7 @@ extern void PID_init_oldmethod(pid_type_def *pid, uint8_t mode, const fp32 PID[3
   * @retval         pidÊä³ö
   */
 extern fp32 PID_calc(pid_type_def *pid, fp32 ref, fp32 set);
-extern fp32 PID_calc_oldmethod(pid_type_def *pid, fp32 input, fp32 target);
+//extern fp32 PID_calc_oldmethod(pid_type_def *pid, fp32 input, fp32 target);
 /**
   * @brief          pid out clear
   * @param[out]     pid: PID struct data point

@@ -32,6 +32,7 @@ int32_t Residue_Power=55000/25;
 
 int8_t CAN2_Cap_flag=0;
 int8_t Cap_Switch_Flag=0;
+int8_t cap_on=1;
 
 int32_t Lost_Connection_Count=0;
 uint8_t Cap_Switch_Count=0;
@@ -81,7 +82,7 @@ void supercap_task(void const * argument)
 
 
 			vTaskDelay(SUPERCAP_CONTROL_TIME);
-#if INCLUDE_uxTaskGetStackHighWaterMark
+#if INCLUDE_uxTaskGetStackHighWaterMark		//1
         supercap_high_water = uxTaskGetStackHighWaterMark(NULL);
 #endif
 	}
@@ -116,57 +117,50 @@ static void Cap_Contorl(cap_control_t *cap_control)
 	fp32 chassis_power_buffer = 0.0f;
 	
 	Lost_Connection_Count+=1;
-	if(Lost_Connection_Count>60000) Lost_Connection_Count=60001;
+	if(Lost_Connection_Count>60000) 
+		Lost_Connection_Count=60001;
 	
-#if Cap_Offline_Debug
+#if Cap_Offline_Debug	//离线调试 0
 	
 	int8_t Debug_Flag=0;
 	
 	extern supercap_module_receive SCM_rx_message;
 	const supercap_module_receive *cap_message	= &SCM_rx_message;
 	
-	if(Debug_Flag==0 && CAN2_Cap_flag!=4) //放电
-	{
-		if(cap_message->cap_vol<Cap_Toutuous_Up)//回环判断
-			{
+	if(Debug_Flag==0 && CAN2_Cap_flag!=4){ //放电
+	
+		if(cap_message->cap_vol<Cap_Toutuous_Up){//回环判断
 				CAN2_Cap_flag=2;
-			}
-		else if (CAN2_Cap_flag==2 && cap_message->cap_vol<Cap_Toutuous_Uppest)
-			{
+		}
+		else if (CAN2_Cap_flag==2 && cap_message->cap_vol<Cap_Toutuous_Uppest){
 				Residue_Power=Power_Limitation_Num/25;
 				CAN_cmd_supercap(2);//边充边放
-			}
-		else
-			{
+		}
+		else{
 				CAN_cmd_supercap(3);//纯电容放电
 				CAN2_Cap_flag=0;
-			}
-		if(cap_message->cap_vol<Cap_Toutuous_Up)
-			{
+		}
+		if(cap_message->cap_vol<Cap_Toutuous_Up){
 				CAN2_Cap_flag=4;
-			}
+		}
 	}
-	else
-	{
-		if(cap_message->cap_vol<Cap_Toutuous_Up)//回环判断
-			{
+	else{
+		if(cap_message->cap_vol<Cap_Toutuous_Up){//回环判断
 				CAN2_Cap_flag=1;
-			}
-		if(CAN2_Cap_flag==1 && cap_message->cap_vol<Cap_Toutuous_Uppest && cap_message->chassis_power<Power_Limitation_Num)
-			{
+		}
+		if(CAN2_Cap_flag==1 && cap_message->cap_vol<Cap_Toutuous_Uppest && cap_message->chassis_power<Power_Limitation_Num){
 				Residue_Power=(Power_Limitation_Num-cap_message->chassis_power)/25;
 				CAN_cmd_supercap(1);//边充边放
-			}
-		else
-			{
+		}
+		else{
 				CAN_cmd_supercap(0);//纯电池放电
 				CAN2_Cap_flag=0;
-			}
+		}
 	}
 
 #else
 	
-	#if Referee_System
+	#if Referee_System //裁判系统
 
 	get_chassis_power_and_buffer(&chassis_power, &chassis_power_buffer);
 	Chassis_Power = chassis_power*1000;		
@@ -178,89 +172,56 @@ static void Cap_Contorl(cap_control_t *cap_control)
 			Chassis_Power = current_sum*24;
 	
 	
+	if(ext_game_robot_status.mains_power_chassis_output==0)//如果底盘被裁判系统断电，电容不放电
+	{
+		if(cap_control->cap_message->cap_vol<Cap_Toutuous_Uppest)
+			cap_FSM=cap_dis_charge;//只充不放
+		else
+			cap_FSM=cap_dis_ucharge;//不充不放
+		cap_on=0;
+	}
+	
 	#endif
 
+	if(cap_on==1)
+	{
 	if(switch_is_mid(cap_control->cap_rc->rc.s[CHASSIS_MODE_CHANNEL])||switch_is_up(cap_control->cap_rc->rc.s[CHASSIS_MODE_CHANNEL]))  //右边拨杆处于中间或者上面
 	{
-		if(Cap_Switch_Flag==1)  //最初值为0
+		if(cap_control->cap_message->cap_vol>26000)//电容电量26000
 		{
-			Cap_Switch_Count+=1;
-			if(Cap_Switch_Count<10)
-				cap_FSM = cap_en_charge;//不充电但电容供电
-			else if(Cap_Switch_Count<50)
-				cap_FSM = cap_dis_ucharge;//不充电且用电池供电
-			
-			else
-			{
-				if(cap_control->cap_message->cap_vol<Cap_Toutuous_Up)//检测电容要不要充电
-					CAN2_Cap_flag=1;//电容电量小于最大值24000
-				if(CAN2_Cap_flag==1 && cap_control->cap_message->cap_vol<(Cap_Toutuous_Uppest+500))// 小于25500？？？
-					cap_FSM = cap_dis_charge;//电容充电且用电池放电
-				
-				else//电容电量大于24000
-				{
-					CAN2_Cap_flag=0;//
-					Cap_Switch_Flag=0;
-					Cap_Switch_Count=0;
-				}
-		    }
+			cap_FSM=cap_en_ucharge;//不充但放
 		}
 		else
 		{
-			if((cap_control->cap_rc->key.v & KEY_PRESSED_OFFSET_F ) == KEY_PRESSED_OFFSET_F )//电容挡
+			if((cap_control->cap_rc->key.v & KEY_PRESSED_OFFSET_F ) == KEY_PRESSED_OFFSET_F ||(cap_control->cap_rc->rc.ch[4]>4500))
 			{
-				if(cap_control->cap_message->cap_vol<Cap_Toutuous_Up)
-					CAN2_Cap_flag=2;//电容电量小于24000且按下F
-
-				if (CAN2_Cap_flag==2 && cap_control->cap_message->cap_vol<Cap_Toutuous_Uppest)//按下F且电容电量小于25000
-					cap_FSM = cap_en_charge;//充电且电容放电
-				
-				else//电容电量大于25000
-				{
-					cap_FSM = cap_en_charge;//电容充电且放电
-					CAN2_Cap_flag=0;
-				}
-				if(cap_control->cap_message->cap_vol<Cap_Toutuous_Down)//电容电量小于20000
-					Cap_Switch_Flag=1;
+				cap_FSM=cap_en_ucharge;
 			}
-			else//没按F
-			{
-				if(cap_control->cap_message->cap_vol<Cap_Toutuous_Uppest+100)//检测电容要不要充电
-					CAN2_Cap_flag=1;//电容电量小于25100
-				
-				if(CAN2_Cap_flag==1 && cap_control->cap_message->cap_vol<(Cap_Toutuous_Uppest+1000))
-					cap_FSM = cap_dis_charge;//电容电量小于26000，充电且用电池放电
-				
-				else//电容电量大于26000
-				{							
-					cap_FSM = cap_dis_ucharge;//不充电且用电池放电
-					CAN2_Cap_flag=0;
-				}
+			else{
+				cap_FSM=cap_dis_charge;//不放但充
 			}
 		}
 	}
 	
 	else if(switch_is_down(cap_control->cap_rc->rc.s[CHASSIS_MODE_CHANNEL]))//down
 	{
-		if(cap_control->cap_message->cap_vol<Cap_Toutuous_Up)//检测电容要不要充电 小于24000
+		if(cap_control->cap_message->cap_vol<Cap_Toutuous_Uppest)
 		{
-			CAN2_Cap_flag=1;
+			cap_FSM = cap_dis_charge;//电容电量小于25000 充
 		}
-		if(CAN2_Cap_flag==1 && cap_control->cap_message->cap_vol<Cap_Toutuous_Uppest && Chassis_Power<Power_Limitation_Num)
+		else//电容电量大于25000
 		{
-			cap_FSM = cap_dis_charge;//电容电量小于25000 且 底盘功率小于55
-		}
-		else//电容电量大于25000或底盘功率大于55
-		{
-			cap_FSM = cap_dis_ucharge;//不充电且用电池放电
+			cap_FSM = cap_dis_ucharge;//不充电
 			CAN2_Cap_flag=0;
 		}
 	}
+	
 	
 	else//读不到遥控器值？
 	{
 		cap_FSM = cap_dis_ucharge;//不充电且用电池放电
 	}
+}
 #endif
 }
 

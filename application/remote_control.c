@@ -188,7 +188,7 @@ void USART3_IRQHandler(void)
                 sbus_to_rc(sbus_rx_buf[0], &rc_ctrl);
                 //记录数据接收时间
                 detect_hook(DBUS_TOE);
-#ifndef USART1_DEBUG
+#ifndef USART1_DEBUG //0
                 sbus_to_usart1(sbus_rx_buf[0]);
 #endif
             }
@@ -222,7 +222,7 @@ void USART3_IRQHandler(void)
                 sbus_to_rc(sbus_rx_buf[1], &rc_ctrl);
                 //记录数据接收时间
                 detect_hook(DBUS_TOE);
-#ifndef USART1_DEBUG 
+#ifndef USART1_DEBUG //0
                 sbus_to_usart1(sbus_rx_buf[1]);
 #endif
             }
@@ -294,7 +294,7 @@ static void sbus_to_rc(volatile const uint8_t *sbus_buf, RC_ctrl_t *rc_ctrl)
   * @param[in]      sbus: sbus数据, 18字节
   * @retval         none
   */
-#ifndef USART1_DEBUG
+#ifndef USART1_DEBUG //0
 void sbus_to_usart1(uint8_t *sbus)
 {
     static uint8_t usart_tx_buf[20];

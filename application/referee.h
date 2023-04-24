@@ -2,11 +2,11 @@
 #define __REFEREEINFO_H__
 
 /******************
-²ÃÅĞĞÅÏ¢½â¶ÁÓëÍ¸´«Êı¾İÖ¡·â×°³ÌĞò
+????????????????
 update:
-	ÊÓÇé¿öµ÷ÓÃ×îºóÈı¸öº¯Êı
-	È«¾Ö±äÁ¿ËµÃ÷¼ûuart2referee.h
-	Ö§³ÖÉÏ´«3¸öfloatÊı¾İ
+	???????????
+	???????uart2referee.h
+	????3?float??
 ******************/
 #include <cstdint>
 //#include "sys.h"
@@ -34,23 +34,36 @@ typedef enum
     BLUE_AERIAL     = 16,
     BLUE_SENTRY     = 17,
 } robot_id_t;
-#define USART_REC_LEN  			200  	//¶¨Òå×î´ó½ÓÊÕ×Ö½ÚÊı 200
-#define EN_USART1_RX 			1		//Ê¹ÄÜ£¨1£©/½ûÖ¹£¨0£©´®¿Ú1½ÓÊÕ
-#define EN_USART6_RX 			1		//Ê¹ÄÜ£¨1£©/½ûÖ¹£¨0£©´®¿Ú1½ÓÊÕ 
+#define USART_REC_LEN  			200  	//????????? 200
+#define EN_USART1_RX 			1		//??(1)/??(0)??1??
+#define EN_USART6_RX 			1		//??(1)/??(0)??1?? 
 #define USART6_dma_rx_len 		80
 #define USART6_dma_tx_len 		128
 void float2bytes(float chosen_value, u8* res_message);
 float _bytes2float(uint8_t* chosen_Message);
 void float2bytes(float chosen_value, u8* res_message);
 void send_single_icon(char* name, int x, int y, int type, int color);
+void send_spinning_graphic(char name[3], int x, int y, int color, int type);
+void send_rub_graphic(char graphname[3], int x, int y, int color, int type);
 void send_multi_graphic(void);
-// flaotºÍ×Ö½Ú»¥×ª
+void send_text_graphic(char GraphName[3]);
+void send_frame1_graphic(char graphname[3], int x, int y);
+void send_frame2_graphic(char graphname[3], int startx, int starty, int endx, int endy);
+void send_capvol_graphic(char name[3],int startx,int endx,int color, int type);
+
+//UI
+void  send_string(char* str, char* name, int x, int y, int upd, int colour);
+void send_pitch_graphic(int type);
+void UI_send_update(void);
+void UI_send_init(void);
+
+// flaot?????
 typedef union {
     float f;
     unsigned char b[4];
 } Bytes2Float;
 
-// floatºÍu32»¥×ª
+// float?u32??
 typedef union {
     u32 u32_value;
     unsigned char b[4];
@@ -62,48 +75,55 @@ typedef union {
 #define REFEREE_STUDENT_ROBOT_MAX               ((uint16_t)(0x0200))
 #define REFEREE_STUDENT_ROBOT_MIN               ((uint16_t)(0x02FF))
 
-#define REFEREE_STUDENT_CLIENT_SOF              ((uint16_t)(0xD180))  //ÕâÀïĞèÒª¸ÄÒ»ÏÂID
+#define REFEREE_STUDENT_CLIENT_SOF              ((uint16_t)(0xD180))  //???????ID
 
-/* ±ÈÈü×´Ì¬Êı¾İ£º0x0001¡£·¢ËÍÆµÂÊ£º1Hz */
+/* ??????:0x0001?????:1Hz */
 typedef __packed struct
 {
-	uint8_t game_type : 4;//0-3 bit£º±ÈÈüÀàĞÍ
-	uint8_t game_progress : 4;//4-7 bit£ºµ±Ç°±ÈÈü½×¶Î
-	uint16_t stage_remain_time;//offset=1 µ±Ç°½×¶ÎÊ£ÓàÊ±¼ä£¬µ¥Î» s
-	uint64_t SyncTimeStamp;//offset=3 »úÆ÷ÈË½ÓÊÕµ½¸ÃÖ¸ÁîµÄ¾«È· Unix Ê±¼ä£¬µ±»úÔØ¶ËÊÕµ½ÓĞĞ§µÄ NTP ·şÎñÆ÷ÊÚÊ±ºóÉúĞ§
+	uint8_t game_type : 4;//0-3 bit:????
+	uint8_t game_progress : 4;//4-7 bit:??????
+	uint16_t stage_remain_time;//offset=1 ????????,?? s
+	uint64_t SyncTimeStamp;//offset=3 ???????????? Unix ??,????????? NTP ????????
 } ext_game_status_t;
 
 
-/* ±ÈÈü½á¹ûÊı¾İ£º0x0002¡£·¢ËÍÆµÂÊ£º±ÈÈü½áÊøºó·¢ËÍ */
+/* ??????:0x0002?????:??????? */
 typedef __packed struct
 {
-	uint8_t winner;//0 Æ½¾Ö 1 ºì·½Ê¤Àû 2 À¶·½Ê¤Àû
+	uint8_t winner;//0 ?? 1 ???? 2 ????
 } ext_game_result_t;
 
 
-/* »úÆ÷ÈËÑªÁ¿Êı¾İ£º0x0003¡£·¢ËÍÆµÂÊ£º1Hz */
+/* ???????:0x0003?????:1Hz */
 typedef __packed struct
 {
-	uint16_t red_1_robot_HP;//offset=0 ºì 1 Ó¢ĞÛ»úÆ÷ÈËÑªÁ¿£¬Î´ÉÏ³¡ÒÔ¼°·£ÏÂÑªÁ¿Îª 0
-	uint16_t red_2_robot_HP;//offset=2 ºì 2 ¹¤³Ì»úÆ÷ÈËÑªÁ¿
-	uint16_t red_3_robot_HP;//offset=4 ºì 3 ²½±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t red_4_robot_HP;//offset=6 ºì 4 ²½±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t red_5_robot_HP;//offset=8 ºì 5 ²½±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t red_7_robot_HP;//offset=10 ºì 7 ÉÚ±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t red_outpost_HP;//offset=12 ºì·½Ç°ÉÚÕ½ÑªÁ¿
-	uint16_t red_base_HP;//offset=14 ºì·½»ùµØÑªÁ¿
+	uint16_t red_1_robot_HP;//offset=0 ? 1 ???????,?????????? 0
+	uint16_t red_2_robot_HP;//offset=2 ? 2 ???????
+	uint16_t red_3_robot_HP;//offset=4 ? 3 ???????
+	uint16_t red_4_robot_HP;//offset=6 ? 4 ???????
+	uint16_t red_5_robot_HP;//offset=8 ? 5 ???????
+	uint16_t red_7_robot_HP;//offset=10 ? 7 ???????
+	uint16_t red_outpost_HP;//offset=12 ???????
+	uint16_t red_base_HP;//offset=14 ??????
 
-	uint16_t blue_1_robot_HP;//offset=16 À¶ 1 Ó¢ĞÛ»úÆ÷ÈËÑªÁ¿
-	uint16_t blue_2_robot_HP;//offset=18 À¶ 2 ¹¤³Ì»úÆ÷ÈËÑªÁ¿
-	uint16_t blue_3_robot_HP;//offset=20 À¶ 3 ²½±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t blue_4_robot_HP;//offset=22À¶ 4 ²½±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t blue_5_robot_HP;//offset=24 À¶ 5 ²½±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t blue_7_robot_HP;//offset=26 À¶ 7 ÉÚ±ø»úÆ÷ÈËÑªÁ¿
-	uint16_t blue_outpost_HP;//offset=28 À¶·½Ç°ÉÚÕ¾ÑªÁ¿
-	uint16_t blue_base_HP;//offset=30 À¶·½»ùµØÑªÁ¿
+	uint16_t blue_1_robot_HP;//offset=16 ? 1 ???????
+	uint16_t blue_2_robot_HP;//offset=18 ? 2 ???????
+	uint16_t blue_3_robot_HP;//offset=20 ? 3 ???????
+	uint16_t blue_4_robot_HP;//offset=22? 4 ???????
+	uint16_t blue_5_robot_HP;//offset=24 ? 5 ???????
+	uint16_t blue_7_robot_HP;//offset=26 ? 7 ???????
+	uint16_t blue_outpost_HP;//offset=28 ???????
+	uint16_t blue_base_HP;//offset=30 ??????
 } ext_game_robot_HP_t;
 
-////·ÉïÚ·¢Éä×´Ì¬£º0x0004
+typedef __packed struct 
+{
+	uint8_t supply_projectile_id;
+	uint8_t supply_robot_id;
+	uint8_t supply_num;
+} ext_supply_projectile_booking_t;
+
+////??????:0x0004
 //typedef __packed struct
 //{
 //	uint8_t dart_belong;
@@ -112,426 +132,428 @@ typedef __packed struct
 
 
 
-/* ÈË¹¤ÖÇÄÜÌôÕ½Èü¼Ó³ÉÓë³Í·£Çø×´Ì¬£º0x0005¡£·¢ËÍÆµÂÊ£º1Hz ÖÜÆÚ·¢ËÍ£¬·¢ËÍ·¶Î§£ºËùÓĞ»úÆ÷ÈË */
+/* ???????????????:0x0005?????:1Hz ????,????:????? */
 typedef __packed struct
 {
-	/* bit[0, 4, 8, 12, 16, 20]Îª F1 - F6 ¼¤»î×´Ì¬£º0 ÎªÎ´¼¤»î£¬1 ÎªÒÑ¼¤»î
-	   bit[1-3, 5-7, 9-11, 13-15, 17-19, 21-23]Îª F1-F6 µÄ×´Ì¬ĞÅÏ¢£º*/
-	uint8_t F1_zone_status : 1;//0bit F1¼¤»î×´Ì¬
-	uint8_t F1_zone_buff_debuff_status : 3;//1-3bit F1×´Ì¬ĞÅÏ¢
-	uint8_t F2_zone_status : 1;//4bit F2¼¤»î×´Ì¬
-	uint8_t F2_zone_buff_debuff_status : 3;//5-7bit F2×´Ì¬ĞÅÏ¢
-	uint8_t F3_zone_status : 1;//8bit F3¼¤»î×´Ì¬
-	uint8_t F3_zone_buff_debuff_status : 3;//9-11bit F3×´Ì¬ĞÅÏ¢
-	uint8_t F4_zone_status : 1;//12bit F4¼¤»î×´Ì¬
-	uint8_t F4_zone_buff_debuff_status : 3;//13-15bit F4×´Ì¬ĞÅÏ¢
-	uint8_t F5_zone_status : 1;//16bit F5×´Ì¬ĞÅÏ¢
-	uint8_t F5_zone_buff_debuff_status : 3;//17-19bit F5×´Ì¬ĞÅÏ¢
-	uint8_t F6_zone_status : 1;//20bit F6×´Ì¬ĞÅÏ¢
-	uint8_t F6_zone_buff_debuff_status : 3;//21-23bit F6×´Ì¬ĞÅÏ¢
-	uint16_t red1_bullet_left;//offset=3 ºì·½ 1 ºÅÊ£Óàµ¯Á¿
-	uint16_t red2_bullet_left;//offset=5 ºì·½ 2 ºÅÊ£Óàµ¯Á¿
-	uint16_t blue1_bullet_left;//offset=7 À¶·½ 1 ºÅÊ£Óàµ¯Á¿
-	uint16_t blue2_bullet_left;//offset=9 À¶·½ 2 ºÅÊ£Óàµ¯Á¿
+	/* bit[0, 4, 8, 12, 16, 20]? F1 - F6 ????:0 ????,1 ????
+	   bit[1-3, 5-7, 9-11, 13-15, 17-19, 21-23]? F1-F6 ?????:*/
+	uint8_t F1_zone_status : 1;//0bit F1????
+	uint8_t F1_zone_buff_debuff_status : 3;//1-3bit F1????
+	uint8_t F2_zone_status : 1;//4bit F2????
+	uint8_t F2_zone_buff_debuff_status : 3;//5-7bit F2????
+	uint8_t F3_zone_status : 1;//8bit F3????
+	uint8_t F3_zone_buff_debuff_status : 3;//9-11bit F3????
+	uint8_t F4_zone_status : 1;//12bit F4????
+	uint8_t F4_zone_buff_debuff_status : 3;//13-15bit F4????
+	uint8_t F5_zone_status : 1;//16bit F5????
+	uint8_t F5_zone_buff_debuff_status : 3;//17-19bit F5????
+	uint8_t F6_zone_status : 1;//20bit F6????
+	uint8_t F6_zone_buff_debuff_status : 3;//21-23bit F6????
+	uint16_t red1_bullet_left;//offset=3 ?? 1 ?????
+	uint16_t red2_bullet_left;//offset=5 ?? 2 ?????
+	uint16_t blue1_bullet_left;//offset=7 ?? 1 ?????
+	uint16_t blue2_bullet_left;//offset=9 ?? 2 ?????
 } ext_ICRA_buff_debuff_zone_status_t;
 
 
-/* ³¡µØÊÂ¼şÊı¾İ£º0x0101¡£·¢ËÍÆµÂÊ£º1Hz */
+/* ??????:0x0101?????:1Hz */
 typedef __packed struct
 {
 	/*
-	bit 8£º¼º·½²à R4/B4 ÌİĞÎ¸ßµØÕ¼Áì×´Ì¬ 1 ÎªÒÑÕ¼Áì
-	bit 9£º¼º·½»ùµØ»¤¶Ü×´Ì¬£º1 Îª»ùµØÓĞĞéÄâ»¤¶ÜÑªÁ¿£»0 Îª»ùµØÎŞĞéÄâ»¤¶ÜÑªÁ¿£»
-	bit 10£º¼º·½Ç°ÉÚÕ½×´Ì¬£º
-	1 ÎªÇ°ÉÚÕ½´æ»î£»
-	0 ÎªÇ°ÉÚÕ½±»»÷»Ù£»
-	bit 10 -31: ±£Áô
+	bit 8:??? R4/B4 ???????? 1 ????
+	bit 9:????????:1 ??????????;0 ??????????;
+	bit 10:???????:
+	1 ??????;
+	0 ???????;
+	bit 10 -31: ??
 	*/
 	uint32_t event_type;
 } ext_event_data_t;
 
 
-/* ²¹¸øÕ¾¶¯×÷±êÊ¶£º0x0102¡£·¢ËÍÆµÂÊ£º¶¯×÷¸Ä±äºó·¢ËÍ, ·¢ËÍ·¶Î§£º¼º·½»úÆ÷ÈË */
+/* ???????:0x0102?????:???????, ????:????? */
 typedef __packed struct
 {
-	uint8_t supply_projectile_id;//offset=0 ²¹¸øÕ¾¿Ú ID£º 1£º1 ºÅ²¹¸ø¿Ú£» 2£º2 ºÅ²¹¸ø¿Ú
+	uint8_t supply_projectile_id;//offset=0 ???? ID: 1:1 ????; 2:2 ????
 	/*
-	²¹µ¯»úÆ÷ÈË ID£º0 Îªµ±Ç°ÎŞ»úÆ÷ÈË²¹µ¯£¬1 Îªºì·½Ó¢ĞÛ»úÆ÷ÈË²¹µ¯£¬2 Îªºì·½¹¤³Ì»ú
-Æ÷ÈË²¹µ¯£¬3/4/5 Îªºì·½²½±ø»úÆ÷ÈË²¹µ¯£¬101 ÎªÀ¶·½Ó¢ĞÛ»úÆ÷ÈË²¹µ¯£¬102 ÎªÀ¶·½¹¤
-³Ì»úÆ÷ÈË²¹µ¯£¬103/104/105 ÎªÀ¶·½²½±ø»úÆ÷ÈË²¹µ¯
+	????? ID:0 ?????????,1 ??????????,2 ??????
+????,3/4/5 ??????????,101 ??????????,102 ????
+??????,103/104/105 ??????????
 	*/
-	uint8_t supply_robot_id;//offset=1 ËµÃ÷¼ûÉÏ
-	uint8_t supply_projectile_step;//offset=2 ³öµ¯¿Ú¿ª±Õ×´Ì¬£º0 Îª¹Ø±Õ£¬1 Îª×Óµ¯×¼±¸ÖĞ£¬2 Îª×Óµ¯ÏÂÂä
-	uint8_t supply_projectile_num;//²¹µ¯ÊıÁ¿£º50£º50 ¿Å×Óµ¯£»100£º100 ¿Å×Óµ¯£»150£º150 ¿Å×Óµ¯£»200£º200 ¿Å×Óµ¯¡£
+	uint8_t supply_robot_id;//offset=1 ????
+	uint8_t supply_projectile_step;//offset=2 ???????:0 ???,1 ??????,2 ?????
+	uint8_t supply_projectile_num;//????:50:50 ???;100:100 ???;150:150 ???;200:200 ????
 } ext_supply_projectile_action_t;
 
 
 
-//----²ÃÅĞ¾¯¸æĞÅÏ¢----
+//----??????----
 typedef __packed struct  //cmd_id (0x0104)
 {
-	uint8_t level;         //1:»ÆÅÆ 2:ºìÅÆ 3:ÅĞ¸º
-	uint8_t foul_robot_id;   //ÅĞ¸ºÊ±£¬»úÆ÷ÈËIDÎª0£»»ÆÅÆ¡¢ºìÅÆÊÇÎª·¸¹æ»úÆ÷ÈËID
+	uint8_t level;         //1:?? 2:?? 3:??
+	uint8_t foul_robot_id;   //???,???ID?0;????????????ID
 } ext_referee_warning_t;
 
 
-//----·ÉïÚ·¢Éä¿Úµ¹¼ÆÊ±----
+//----????????----
 typedef __packed struct  //cmd_id(0x0105)
 {
-	uint8_t dart_remaining_time;  //15sµ¹¼ÆÊ±
+	uint8_t dart_remaining_time;  //15s???
 } ext_dart_remaining_time_t;
 
 
-//----±ÈÈü»úÆ÷ÈË×´Ì¬----
+//----???????----
 typedef __packed struct  //cmd_id(0x0201)
 {
 	uint8_t robot_id;
-	//±¾»úÆ÷ÈËID£º1£ººì·½Ó¢ĞÛ»úÆ÷ÈË£»2£ººì·½¹¤³Ì»úÆ÷ÈË£»3/4/5£ººì·½²½±ø»úÆ÷ÈË£»6£ººì·½¿ÕÖĞ»úÆ÷ÈË£»
-	//   7£ººì·½ÉÚ±ø»úÆ÷ÈË£»8£ººì·½·ÉïÚ»úÆ÷ÈË£»9£ººì·½À×´ïÕ¾£»101£ºÀ¶·½Ó¢ĞÛ»úÆ÷ÈË£»102£ºÀ¶·½¹¤³Ì»úÆ÷ÈË£»
-	//   103/104/105£ºÀ¶·½²½±ø»úÆ÷ÈË£»106£ºÀ¶·½¿ÕÖĞ»úÆ÷ÈË£»107£ºÀ¶·½ÉÚ±ø»úÆ÷ÈË£»108£ºÀ¶·½·ÉïÚ»úÆ÷ÈË£»109£ºÀ¶·½À×´ïÕ¾¡£
+	//????ID:1:???????;2:???????;3/4/5:???????;6:???????;
+	//   7:???????;8:???????;9:?????;101:???????;102:???????;
+	//   103/104/105:???????;106:???????;107:???????;108:???????;109:??????
 
-	uint8_t robot_level; //»úÆ÷ÈËµÈ¼¶  1£ºÒ»¼¶  2£º¶ş¼¶  3£ºÈı¼¶
-	uint16_t remain_HP;  //»úÆ÷ÈËÊ£ÓàÑªÁ¿
-	uint16_t max_HP;     //»úÆ÷ÈËÉÏÏŞÑªÁ¿
+	uint8_t robot_level; //?????  1:??  2:??  3:??
+	uint16_t remain_HP;  //???????
+	uint16_t max_HP;     //???????
 
-	uint16_t shooter_id1_17mm_cooling_rate;  //»úÆ÷ÈË1ºÅ17mmÇ¹¿ÚÃ¿ÃëÀäÈ´Öµ
-	uint16_t shooter_id1_17mm_cooling_limit; //»úÆ÷ÈË1ºÅ17mmÇ¹¿ÚÈÈÁ¿ÉÏÏŞ
-	uint16_t shooter_id1_17mm_speed_limit;   //»úÆ÷ÈË1ºÅ17mmÇ¹¿ÚÉÏÏŞËÙ¶È µ¥Î»m/s
+	uint16_t shooter_id1_17mm_cooling_rate;  //???1?17mm???????
+	uint16_t shooter_id1_17mm_cooling_limit; //???1?17mm??????
+	uint16_t shooter_id1_17mm_speed_limit;   //???1?17mm?????? ??m/s
 
-	uint16_t shooter_id2_17mm_cooling_rate;  //»úÆ÷ÈË2ºÅ17mmÇ¹¿ÚÃ¿ÃëÀäÈ´Öµ
-	uint16_t shooter_id2_17mm_cooling_limit; //»úÆ÷ÈË2ºÅ17mmÇ¹¿ÚÈÈÁ¿ÉÏÏŞ
-	uint16_t shooter_id2_17mm_speed_limit;   //»úÆ÷ÈË2ºÅ17mmÇ¹¿ÚÉÏÏŞËÙ¶È µ¥Î»m/s
+	uint16_t shooter_id2_17mm_cooling_rate;  //???2?17mm???????
+	uint16_t shooter_id2_17mm_cooling_limit; //???2?17mm??????
+	uint16_t shooter_id2_17mm_speed_limit;   //???2?17mm?????? ??m/s
 
-	uint16_t shooter_id1_42mm_cooling_rate;  //»úÆ÷ÈË42mmÇ¹¿ÚÃ¿ÃëÀäÈ´Öµ
-	uint16_t shooter_id1_42mm_cooling_limit; //»úÆ÷ÈË42mmÇ¹¿ÚÈÈÁ¿ÉÏÏŞ
-	uint16_t shooter_id1_42mm_speed_limit;   //»úÆ÷ÈË42mmÇ¹¿ÚÉÏÏŞËÙ¶È µ¥Î»m/s
+	uint16_t shooter_id1_42mm_cooling_rate;  //???42mm???????
+	uint16_t shooter_id1_42mm_cooling_limit; //???42mm??????
+	uint16_t shooter_id1_42mm_speed_limit;   //???42mm?????? ??m/s
 
-	uint16_t chassis_power_limit;    //»úÆ÷ÈËµ×ÅÌ¹¦ÂÊÏŞÖÆÉÏÏŞ
-	uint8_t mains_power_gimbal_output : 1;  //Ö÷¿ØµçÔ´Êä³öÇé¿ö  0bit:gimbalÊä³ö    0ÎªÎŞ24VÊä³ö£¬1ÎªÓĞ24VÊä³ö
-	uint8_t mains_power_chassis_output : 1; //                 1bit:chassisÊä³ö   
-	uint8_t mains_power_shooter_output : 1; //                 2bit:shooterÊä³ö  
+	uint16_t chassis_power_limit;    //???????????
+	uint8_t mains_power_gimbal_output : 1;  //????????  0bit:gimbal??    0??24V??,1??24V??
+	uint8_t mains_power_chassis_output : 1; //                 1bit:chassis??   
+	uint8_t mains_power_shooter_output : 1; //                 2bit:shooter??  
 } ext_game_robot_status_t;
 
 
-//----ÊµÊ±¹¦ÂÊÈÈÁ¿Êı¾İ----
+//----????????----
 typedef __packed struct  // 0x0202
 {
-	uint16_t chassis_volt;  //µ×ÅÌÊä³öµçÑ¹ µ¥Î» ºÁ·ü
-	uint16_t chassis_current;  //µ×ÅÌÊä³öµçÁ÷ µ¥Î» ºÁ°²
-	float chassis_power;  //µ×ÅÌÊä³ö¹¦ÂÊ µ¥Î» W Íß
-	uint16_t chassis_power_buffer;  //µ×ÅÌ¹¦ÂÊ»º³å µ¥Î» J ½¹¶ú ±¸×¢£º·ÉÆÂ¸ù¾İ¹æÔòÔö¼ÓÖÁ250J
-	uint16_t shooter_id1_17mm_cooling_heat;  //1ºÅ17mm Ç¹¿ÚÈÈÁ¿
-	uint16_t shooter_id2_17mm_cooling_heat;  //2ºÅ17mmÇ¹¿ÚÈÈÁ¿
-	uint16_t shooter_id1_42mm_cooling_heat;  //42mm Ç¹¿ÚÈÈÁ¿
+	uint16_t chassis_volt;  //?????? ?? ??
+	uint16_t chassis_current;  //?????? ?? ??
+	float chassis_power;  //?????? ?? W ?
+	uint16_t chassis_power_buffer;  //?????? ?? J ?? ??:?????????250J
+	uint16_t shooter_id1_17mm_cooling_heat;  //1?17mm ????
+	uint16_t shooter_id2_17mm_cooling_heat;  //2?17mm????
+	uint16_t shooter_id1_42mm_cooling_heat;  //42mm ????
 } ext_power_heat_data_t;
 
 
-//----»úÆ÷ÈËÎ»ÖÃ----
+//----?????----
 typedef __packed struct  //0x0203
 {
-	float x;  //Î»ÖÃx×ø±ê£¬µ¥Î»m
-	float y;  //Î»ÖÃy×ø±ê£¬µ¥Î»m
-	float z;  //Î»ÖÃz×ø±ê£¬µ¥Î»m
-	float yaw;  //Î»ÖÃÇ¹¿Ú£¬µ¥Î»¶È
+	float x;  //??x??,??m
+	float y;  //??y??,??m
+	float z;  //??z??,??m
+	float yaw;  //????,???
 } ext_game_robot_pos_t;
 
 
-//----»úÆ÷ÈËÔöÒæ----
+//----?????----
 typedef __packed struct  //0x0204
 {
 	uint8_t power_rune_buff;
-	//bit 0£º»úÆ÷ÈËÑªÁ¿²¹Ñª×´Ì¬; bit 1£ºÇ¹¿ÚÈÈÁ¿ÀäÈ´¼ÓËÙ; bit 2£º»úÆ÷ÈË·ÀÓù¼Ó³É; bit 3£º»úÆ÷ÈË¹¥»÷¼Ó³É; ÆäËûbit±£Áô
+	//bit 0:?????????; bit 1:????????; bit 2:???????; bit 3:???????; ??bit??
 
 }ext_buff_t;
 
 
-//----¿ÕÖĞ»úÆ÷ÈËÄÜÁ¿×´Ì¬----
+//----?????????----
 typedef __packed struct  //0x0205
 {
-	uint8_t attack_time;   //¿É¹¥»÷Ê±¼ä µ¥Î» s¡£30s µİ¼õÖÁ0
+	uint8_t attack_time;   //????? ?? s?30s ???0
 } aerial_robot_energy_t;
 
 
-//----ÉËº¦×´Ì¬----
+//----????----
 typedef __packed struct //0x0206
 {
 	uint8_t armor_id : 4;
 	uint8_t hurt_type : 4;
-	//bit 0-3£ºµ±ÑªÁ¿±ä»¯ÀàĞÍÎª×°¼×ÉËº¦£¬´ú±í×°¼×ID£¬ÆäÖĞÊıÖµÎª0-4ºÅ´ú±í»úÆ÷ÈËµÄÎå¸ö×°¼×Æ¬£¬ÆäËûÑªÁ¿±ä»¯ÀàĞÍ£¬¸Ã±äÁ¿ÊıÖµÎª0¡£
-	//bit 4-7£ºÑªÁ¿±ä»¯ÀàĞÍ
-	//0x0 ×°¼×ÉËº¦¿ÛÑª£»
-	//0x1 Ä£¿éµôÏß¿ÛÑª£»
-	//0x2 ³¬ÉäËÙ¿ÛÑª£»
-	//0x3 ³¬Ç¹¿ÚÈÈÁ¿¿ÛÑª£»
-	//0x4 ³¬µ×ÅÌ¹¦ÂÊ¿ÛÑª£»
-	//0x5 ×°¼××²»÷¿ÛÑª
+	//bit 0-3:????????????,????ID,?????0-4????????????,????????,??????0?
+	//bit 4-7:??????
+	//0x0 ??????;
+	//0x1 ??????;
+	//0x2 ?????;
+	//0x3 ???????;
+	//0x4 ???????;
+	//0x5 ??????
 } ext_robot_hurt_t;
 
 
-//----ÊµÊ±Éä»÷ĞÅÏ¢----
+//----??????----
 typedef __packed struct  //0x0207
 {
-	uint8_t bullet_type;  //×Óµ¯ÀàĞÍ: 1£º17mmµ¯Íè 2£º42mmµ¯Íè
-	uint8_t shooter_id;   //·¢Éä»ú¹¹ID£º1£º1ºÅ17mm·¢Éä»ú¹¹; 2£º2ºÅ17mm·¢Éä»ú¹¹; 3£º42mm ·¢Éä»ú¹¹
-	uint8_t bullet_freq;  //×Óµ¯ÉäÆµ µ¥Î» Hz
-	float bullet_speed;   //×Óµ¯ÉäËÙ µ¥Î» m/s
+	uint8_t bullet_type;  //????: 1:17mm?? 2:42mm??
+	uint8_t shooter_id;   //????ID:1:1?17mm????; 2:2?17mm????; 3:42mm ????
+	uint8_t bullet_freq;  //???? ?? Hz
+	float bullet_speed;   //???? ?? m/s
 } ext_shoot_data_t;
 
 
-//----×Óµ¯Ê£Óà·¢ÉäÊı----
+//----???????----
 typedef __packed struct  //0x0208
 {
-	uint16_t remaining_num_17mm;  //17mm×Óµ¯Ê£Óà·¢ÉäÊıÄ¿
-	uint16_t remaining_num_42mm;  //42mm×Óµ¯Ê£Óà·¢ÉäÊıÄ¿
-	uint16_t coin_remaining_num;  //Ê£Óà½ğ±ÒÊıÁ¿
+	uint16_t remaining_num_17mm;  //17mm????????
+	uint16_t remaining_num_42mm;  //42mm????????
+	uint16_t coin_remaining_num;  //??????
 } ext_bullet_remaining_t;
 
 
-//----»úÆ÷ÈËRFID×´Ì¬----
+//----???RFID??----
 typedef __packed struct  //0x0209
 {
 	uint32_t rfid_status;
-	//bit 0£º»ùµØÔöÒæµãRFID×´Ì¬£»   bit 1£º¸ßµØÔöÒæµãRFID×´Ì¬£»   bit 2£ºÄÜÁ¿»ú¹Ø¼¤»îµãRFID×´Ì¬£»  bit 3£º·ÉÆÂÔöÒæµãRFID×´Ì¬£»
-	//bit 4£ºÇ°ÉÚ¸ÚÔöÒæµãRFID×´Ì¬£» bit 6£º²¹ÑªµãÔöÒæµãRFID×´Ì¬£» bit 7£º¹¤³Ì»úÆ÷ÈË¸´»î¿¨RFID×´Ì¬£» bit 8-31£º±£Áô
+	//bit 0:?????RFID??;   bit 1:?????RFID??;   bit 2:???????RFID??;  bit 3:?????RFID??;
+	//bit 4:??????RFID??; bit 6:??????RFID??; bit 7:????????RFID??; bit 8-31:??
 
 } ext_rfid_status_t;
 
 
-//----·ÉïÚ»úÆ÷ÈË¿Í»§¶ËÖ¸ÁîÊı¾İ----
+//----????????????----
 typedef __packed struct  //0x020A
 {
 	uint8_t dart_launch_opening_status;
-	//µ±Ç°·ÉïÚ·¢Éä¿ÚµÄ×´Ì¬: 1£º¹Ø±Õ; 2£ºÕıÔÚ¿ªÆô»òÕß¹Ø±ÕÖĞ; 0£ºÒÑ¾­¿ªÆô	
+	//??????????: 1:??; 2:?????????; 0:????	
 	uint8_t dart_attack_target;
-	//·ÉïÚµÄ´ò»÷Ä¿±ê£¬Ä¬ÈÏÎªÇ°ÉÚÕ¾; 0£ºÇ°ÉÚÕ¾; 1£º»ùµØ¡£
+	//???????,??????; 0:???; 1:???
 
-	uint16_t target_change_time;  //ÇĞ»»´ò»÷Ä¿±êÊ±µÄ±ÈÈüÊ£ÓàÊ±¼ä£¬µ¥Î»Ãë£¬´ÓÎ´ÇĞ»»Ä¬ÈÏÎª0
-	uint16_t operate_launch_cmd_time;  //×î½üÒ»´Î²Ù×÷ÊÖÈ·¶¨·¢ÉäÖ¸ÁîÊ±µÄ±ÈÈüÊ£ÓàÊ±¼ä£¬µ¥Î»Ãë, ³õÊ¼ÖµÎª0¡£
+	uint16_t target_change_time;  //??????????????,???,???????0
+	uint16_t operate_launch_cmd_time;  //?????????????????????,???, ????0?
 } ext_dart_client_cmd_t;
 
 
-/*----------0x0301²¿·Ö¿ªÊ¼------------*/
-//----½»»¥Êı¾İ½ÓÊÕĞÅÏ¢----
+/*----------0x0301????------------*/
+//----????????----
 typedef __packed struct //0x0301
 {
-	uint16_t data_cmd_id;//ÄÚÈİ ID
-	uint16_t sender_ID;//·¢ËÍÕßµÄ ID
-	uint16_t receiver_ID;//½ÓÊÕÕßµÄ ID
-}ext_student_interactive_header_data_t;//Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
+	uint16_t data_cmd_id;//?? ID
+	uint16_t sender_ID;//???? ID
+	uint16_t receiver_ID;//???? ID
+}ext_student_interactive_header_data_t;//??????????????
 
 
-//----»úÆ÷ÈË¼ä½»»¥Êı¾İ----
+//----????????----
 typedef __packed struct
 {
-	ext_student_interactive_header_data_t header_data;//Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	uint8_t data[113];/*Êı¾İ¶Î³¤¶ÈĞ¡ÓÚ113 */
-} robot_interactive_data_t;//ÄÚÈİ ID:0x0200~0x02FF
+	ext_student_interactive_header_data_t header_data;//??????????????
+	uint8_t data[113];/*???????113 */
+} robot_interactive_data_t;//?? ID:0x0200~0x02FF
 
 
-//----¿Í»§¶ËÉ¾³ıÍ¼ĞÎ----
+
+
+//----???????----
 typedef __packed struct
 {
-	//ÄÚÈİ ID:0x0100
-	ext_student_interactive_header_data_t header_data;//Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	uint8_t operate_tpye; /*Í¼ĞÎ²Ù×÷£¬°üÀ¨:
-							0: ¿Õ²Ù×÷£»
-							1: É¾³ıÍ¼²ã£»
-							2: É¾³ıËùÓĞ£»
+	//?? ID:0x0100
+	ext_student_interactive_header_data_t header_data;//??????????????
+	uint8_t operate_tpye; /*????,??:
+							0: ???;
+							1: ????;
+							2: ????;
 							*/
-	uint8_t layer;         //Í¼²ãÊı£º0~9
+	uint8_t layer;         //???:0~9
 } ext_client_custom_graphic_delete_t;
 
 
-//----Í¼ĞÎÊı¾İ----
+//----????----
 typedef __packed struct
 {
-	uint8_t graphic_name[3];//Í¼ĞÎÃû,ÔÚÉ¾³ı£¬ĞŞ¸ÄµÈ²Ù×÷ÖĞ£¬×÷Îª¿Í»§¶ËµÄË÷Òı¡£
-	uint32_t operate_tpye : 3; //bit 0 - 2£ºÍ¼ĞÎ²Ù×÷
-	uint32_t graphic_tpye : 3;//Bit 3-5£ºÍ¼ĞÎÀàĞÍ
-	uint32_t layer : 4;// Bit 6 - 9£ºÍ¼²ãÊı£¬0~9
-	uint32_t color : 4;//Bit 10-13£ºÑÕÉ«
-	uint32_t start_angle : 9;//Bit 14-22£ºÆğÊ¼½Ç¶È£¬µ¥Î»£º¡ã£¬·¶Î§[0,360]£»
-	uint32_t end_angle : 9;//Bit 23-31£ºÖÕÖ¹½Ç¶È£¬µ¥Î»£º¡ã£¬·¶Î§[0,360]¡£
-	uint32_t width : 10;//Bit 0-9£ºÏß¿í£»
-	uint32_t start_x : 11;//Bit 10-20£ºÆğµã x ×ø±ê£»
-	uint32_t start_y : 11;//Bit 21-31£ºÆğµã y ×ø±ê¡£
-	uint32_t radius : 10;//Bit 0-9£º×ÖÌå´óĞ¡»òÕß°ë¾¶£»
-	uint32_t end_x : 11;//Bit 10-20£ºÖÕµã x ×ø±ê£»
-	uint32_t end_y : 11;//Bit 21-31£ºÖÕµã y ×ø±ê¡£
-} graphic_data_struct_t;//Ïê¼û²ÃÅĞÊÖ²á22Ò³¡£
+	uint8_t graphic_name[3];//???,???,??????,?????????
+	uint32_t operate_tpye : 3; //bit 0 - 2:????
+	uint32_t graphic_tpye : 3;//Bit 3-5:????
+	uint32_t layer : 4;// Bit 6 - 9:???,0~9
+	uint32_t color : 4;//Bit 10-13:??
+	uint32_t start_angle : 9;//Bit 14-22:????,??:°,??[0,360];
+	uint32_t end_angle : 9;//Bit 23-31:????,??:°,??[0,360]?
+	uint32_t width : 10;//Bit 0-9:??;
+	uint32_t start_x : 11;//Bit 10-20:?? x ??;
+	uint32_t start_y : 11;//Bit 21-31:?? y ???
+	uint32_t radius : 10;//Bit 0-9:????????;
+	uint32_t end_x : 11;//Bit 10-20:?? x ??;
+	uint32_t end_y : 11;//Bit 21-31:?? y ???
+} graphic_data_struct_t;//??????22??
 
 
-//----¿Í»§¶Ë»æÖÆÒ»¸öÍ¼ĞÎ----
+//----?????????----
 typedef __packed struct
 {
-	//ÄÚÈİ ID:0x0101
-	ext_student_interactive_header_data_t header_data; //Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	graphic_data_struct_t graphic_data_struct;//Í¼ĞÎ 1 
+	//?? ID:0x0101
+	ext_student_interactive_header_data_t header_data; //??????????????
+	graphic_data_struct_t graphic_data_struct;//?? 1 
 } ext_client_custom_graphic_single_t;
 
-//----¿Í»§¶Ë»æÖÆÁ½¸öÍ¼ĞÎ----
+//----?????????----
 typedef __packed struct
 {
-	//ÄÚÈİ ID:0x0102
-	ext_student_interactive_header_data_t header_data;  //Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	graphic_data_struct_t graphic_data_struct[2];//Í¼ĞÎ1£¬2
+	//?? ID:0x0102
+	ext_student_interactive_header_data_t header_data;  //??????????????
+	graphic_data_struct_t graphic_data_struct[2];//??1,2
 } ext_client_custom_graphic_double_t;
 
 
-//----¿Í»§¶Ë»æÖÆÎå¸öÍ¼ĞÎ----
+//----?????????----
 typedef __packed struct
 {
-	//ÄÚÈİ ID:0x0103
-	ext_student_interactive_header_data_t header_data;//Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	graphic_data_struct_t graphic_data_struct[5];//Í¼ĞÎ1~5
+	//?? ID:0x0103
+	ext_student_interactive_header_data_t header_data;//??????????????
+	graphic_data_struct_t graphic_data_struct[5];//??1~5
 } ext_client_custom_graphic_five_t;
 
-//----¿Í»§¶Ë»æÖÆÆß¸öÍ¼ĞÎ----
+//----?????????----
 typedef __packed struct
 {
-	//ÄÚÈİ ID:0x0104
-	ext_student_interactive_header_data_t header_data;//Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	graphic_data_struct_t graphic_data_struct[7];//Í¼ĞÎ1~7
+	//?? ID:0x0104
+	ext_student_interactive_header_data_t header_data;//??????????????
+	graphic_data_struct_t graphic_data_struct[7];//??1~7
 } ext_client_custom_graphic_seven_t;
 
-//----¿Í»§¶Ë»æÖÆ×Ö·û----
+//----???????----
 
 typedef __packed struct
 {
-	//ÄÚÈİ ID:0x0110
-	ext_student_interactive_header_data_t header_data;//Ñ§Éú»úÆ÷ÈË¼äÍ¨ĞÅÊı¾İ¶ÎÍ·½á¹¹
-	graphic_data_struct_t graphic_data_struct;//×Ö·ûÅäÖÃ
-	uint8_t data[30];                        //×Ö·û
+	//?? ID:0x0110
+	ext_student_interactive_header_data_t header_data;//??????????????
+	graphic_data_struct_t graphic_data_struct;//????
+	uint8_t data[30];                        //??
 } ext_client_custom_character_t;
-/*----------0x0301²¿·Ö½áÊø------------*/
+/*----------0x0301????------------*/
 
 
 
 
-//----½»»¥Êı¾İ½ÓÊÕĞÅÏ¢----
-//·¢ËÍÆµÂÊ£ºÉÏÏŞ 30Hz
+//----????????----
+//????:?? 30Hz
 //typedef __packed struct //0x0302
 //{
-//	uint8_t data[]; //ÄÚÈİ¶ÎÊı¾İ,´óĞ¡×î´óÎª30×Ö½Ú¡£
+//	uint8_t data[]; //?????,?????30???
 //} robot_interactive_data_t;
 
 
 
-//----Ğ¡µØÍ¼ÏÂ·¢ĞÅÏ¢±êÊ¶----
-/*·¢ËÍÆµÂÊ£º´¥·¢Ê±·¢ËÍ.*/
+//----?????????----
+/*????:?????.*/
 typedef __packed struct  //0x0303
 {
-	float target_position_x;//Ä¿±ê x Î»ÖÃ×ø±ê£¬µ¥Î» m,µ±·¢ËÍÄ¿±ê»úÆ÷ÈË ID Ê±£¬¸ÃÏîÎª 0
-	float target_position_y;//Ä¿±ê y Î»ÖÃ×ø±ê£¬µ¥Î» m,µ±·¢ËÍÄ¿±ê»úÆ÷ÈË ID Ê±£¬¸ÃÏîÎª 0
-	float target_position_z;//Ä¿±ê z Î»ÖÃ×ø±ê£¬µ¥Î» m,µ±·¢ËÍÄ¿±ê»úÆ÷ÈË ID Ê±£¬¸ÃÏîÎª 0
-	uint8_t commd_keyboard;//·¢ËÍÖ¸ÁîÊ±£¬ÔÆÌ¨ÊÖ°´ÏÂµÄ¼üÅÌĞÅÏ¢ ,ÎŞ°´¼ü°´ÏÂÔòÎª 0
-	uint16_t target_robot_ID;//Òª×÷ÓÃµÄÄ¿±ê»úÆ÷ÈË ID,µ±·¢ËÍÎ»ÖÃĞÅÏ¢Ê±£¬¸ÃÏîÎª 0
-	/*»úÆ÷ÈËID¶ÔÓ¦Ïê¼û²ÃÅĞÊÖ²á27Ò³*/
+	float target_position_x;//?? x ????,?? m,???????? ID ?,??? 0
+	float target_position_y;//?? y ????,?? m,???????? ID ?,??? 0
+	float target_position_z;//?? z ????,?? m,???????? ID ?,??? 0
+	uint8_t commd_keyboard;//?????,?????????? ,??????? 0
+	uint16_t target_robot_ID;//????????? ID,????????,??? 0
+	/*???ID????????27?*/
 
 
-	//0x0304²¿·ÖÒ»Æğ²¢Èë´Ë½á¹¹ÌåÈçÏÂ
-	int16_t mouse_x;			//Êó±ê X ÖáĞÅÏ¢
-	int16_t mouse_y;			//Êó±ê Y ÖáĞÅÏ¢
-	int16_t mouse_z;			//Êó±ê¹öÂÖĞÅÏ¢
-	uint8_t left_button_down;		//Êó±ê×ó¼ü
-	uint8_t right_button_down;		//Êó±êÓÒ¼ü°´ÏÂ
-	uint16_t keyboard_value;	//¼üÅÌĞÅÏ¢
-	uint16_t reserved;			//±£ÁôÎ»
+	//0x0304????????????
+	int16_t mouse_x;			//?? X ???
+	int16_t mouse_y;			//?? Y ???
+	int16_t mouse_z;			//??????
+	uint8_t left_button_down;		//????
+	uint8_t right_button_down;		//??????
+	uint16_t keyboard_value;	//????
+	uint16_t reserved;			//???
 } ext_robot_command_t;
 
 
-//----Ğ¡µØÍ¼½ÓÊÕĞÅÏ¢±êÊ¶----
-//×î´ó½ÓÊÕÆµÂÊ£º10Hz¡£
-//À×´ïÕ¾·¢ËÍµÄ×ø±êĞÅÏ¢¿ÉÒÔ±»ËùÓĞ¼º·½²Ù×÷ÊÖÔÚµÚÒ»ÊÓ½ÇĞ¡µØÍ¼¿´µ½¡£
+//----?????????----
+//??????:10Hz?
+//???????????????????????????????
 typedef __packed struct   //0x0305
 {
-	uint16_t target_robot_ID;//Ä¿±ê»úÆ÷ÈË ID 
-	float target_position_x;//Ä¿±ê x Î»ÖÃ×ø±ê£¬µ¥Î» m
-	float target_position_y;//Ä¿±ê y Î»ÖÃ×ø±ê£¬µ¥Î» m 
-} ext_client_map_command_t;// ¿Í»§¶Ë½ÓÊÕĞÅÏ¢£¬ÆäÖĞ¸÷Ïîµ± x,y ³¬³ö½çÏŞÊ±Ôò²»ÏÔÊ¾¡£
+	uint16_t target_robot_ID;//????? ID 
+	float target_position_x;//?? x ????,?? m
+	float target_position_y;//?? y ????,?? m 
+} ext_client_map_command_t;// ???????,????? x,y ??????????
 
 
 
 /*
-¼üÅÌĞÅÏ¢£º
-bit 0£º¼üÅÌ W ÊÇ·ñ°´ÏÂ
-bit 1£º¼üÅÌ S ÊÇ·ñ°´ÏÂ
-bit 2£º¼üÅÌ A ÊÇ·ñ°´ÏÂ
-bit 3£º¼üÅÌ D ÊÇ·ñ°´ÏÂ
-bit 4£º¼üÅÌ SHIFT ÊÇ·ñ°´ÏÂ
-bit 5£º¼üÅÌ CTRL ÊÇ·ñ°´ÏÂ
-bit 6£º¼üÅÌ Q ÊÇ·ñ°´ÏÂ
-bit 7£º¼üÅÌ E ÊÇ·ñ°´ÏÂ
-bit 8£º¼üÅÌ R ÊÇ·ñ°´ÏÂ
-bit 9£º¼üÅÌ F ÊÇ·ñ°´ÏÂ
-bit 10£º¼üÅÌ G ÊÇ·ñ°´ÏÂ
-bit 11£º¼üÅÌ Z ÊÇ·ñ°´ÏÂ
-bit 12£º¼üÅÌ X ÊÇ·ñ°´ÏÂ
-bit 13£º¼üÅÌ C ÊÇ·ñ°´ÏÂ
-bit 14£º¼üÅÌ V ÊÇ·ñ°´ÏÂ
-bit 15£º¼üÅÌ B ÊÇ·ñ°´ÏÂ
+????:
+bit 0:?? W ????
+bit 1:?? S ????
+bit 2:?? A ????
+bit 3:?? D ????
+bit 4:?? SHIFT ????
+bit 5:?? CTRL ????
+bit 6:?? Q ????
+bit 7:?? E ????
+bit 8:?? R ????
+bit 9:?? F ????
+bit 10:?? G ????
+bit 11:?? Z ????
+bit 12:?? X ????
+bit 13:?? C ????
+bit 14:?? V ????
+bit 15:?? B ????
 */
 
 
-// Ê¹ÓÃÍêÕûÊı¾İÖ¡Á¢¿Ì¸üĞÂÈ«²¿²ÃÅĞĞÅÏ¢Ïà¹Ø½á¹¹Ìå¡£(´øĞ£Ñé)
+// ???????????????????????(???)
 // u8 frame_interpret(uint8_t * frame);
 bool frame_interpret(uint8_t* _frame, uint16_t size);
 
-// ¶ÁÈëµ¥×Ö½ÚÀ´¸üĞÂÈ«²¿²ÃÅĞĞÅÏ¢Ïà¹Ø½á¹¹Ìå, 
-// ¼´½öÀÛ»ı×Ö½ÚÎªÒ»ÍêÕûÊı¾İ°üÊ± ²Åµ÷ÓÃframe_interpretº¯Êı À´¸üĞÂÏà¹Ø½á¹¹Ìå¡£
+// ???????????????????, 
+// ?????????????? ???frame_interpret?? ?????????
 void referee_info_update(uint8_t single_byte);
-// ×Ô¶¨ÒåÊı¾İÖ¡, ·â×°ÈëÊı×éÍ·Ö¸Õëcustom_frame£¬³¤¶È = 5+2+12+2 = 21
-// µ÷ÓÃÇ°ÇëÈ·±£È«¾Ö±äÁ¿MyData½á¹¹ÌåÒÑ¸üĞÂÖµ, 
-// ·¢ËÍÊ¾Àı:
+// ??????, ????????custom_frame,?? = 5+2+12+2 = 21
+// ??????????MyData???????, 
+// ????:
 // for(i=0;i<21;i++) {
 //     USART_SendData(USART2, custom_frame_test[i]);
 //     while(USART_GetFlagStatus(USART2, USART_FLAG_TC) != SET);
 // }
 
 
-// debugÓÃµÄÈ«¾Ö±äÁ¿
-extern u8 referee_message[64];  // ÍêÕûÊı¾İÖ¡´æ·Å, ÀíÂÛ44¾Í¹»¡£
+// debug??????
+extern u8 referee_message[64];  // ???????, ??44???
 extern u8 cmdID;;
-extern u8 blood_counter;  // (debug)±»´ò¼ÆÊı
+extern u8 blood_counter;  // (debug)????
 
-// ÒÔÏÂÔİÊ±²»ÓÃ
-//// Ğ£ÑéÊı¾İÖ¡, CRC8ºÍCRC16
+// ??????
+//// ?????, CRC8?CRC16
 //u8 Verify_frame(uint8_t * frame);
 
 extern void update_from_dma(void);
 extern u8 seq_real;
 extern u8 usart6_dma_flag;
 extern int shoot_counter_referee;
-extern ext_game_status_t                           ext_game_state;// ±ÈÈü½ø³ÌĞÅÏ¢£¨0x0001£©
-extern ext_game_status_t                           ext_game_state;// ±ÈÈü×´Ì¬Êı¾İ£¨0x0001£©
-extern ext_game_result_t                          ext_game_result;//±ÈÈü½á¹ûÊı¾İ(0x0002)
-extern ext_game_robot_HP_t                 ext_game_robot_survivors;//»úÆ÷ÈË´æ´æ»îÊı¾İ£¨0x0003£©
-//extern ext_dart_status_t                          ext_dart_status;//·ÉïÚ·¢Éä×´Ì¬£¨0x0004£©
-extern ext_event_data_t                           ext_event_data;//³¡µØÊ±ÊÂ¼şÊı¾İ£¨0x0101£©
-extern ext_supply_projectile_action_t             ext_supply_projectile_action;//²¹¸øÕ¾¶¯×÷±êÊ¶£¨0x0102£©
-//extern ext_supply_projectile_booking_t            ext_supply_projectile_booking;//²¹¸øÕ¾Ô¤Ô¼×Óµ¯£¨0x0103£©
-extern ext_referee_warning_t                      ext_referee_warning;//²ÃÅĞ¾¯¸æĞÅÏ¢£¨0x0104£©
-extern ext_dart_remaining_time_t                  ext_dart_remaining_time;//·ÉïÚ·¢Éä¿Úµ¹¼ÆÊ±(0x0105)
-extern ext_game_robot_status_t                     ext_game_robot_status;//±ÈÈü»úÆ÷ÈË×´Ì¬(0x0201)
-extern ext_power_heat_data_t                      ext_power_heat_data;////ÊµÊ±¹¦ÂÊÈÈÁ¿Êı¾İ£¨0x0202£©
-extern ext_game_robot_pos_t                       ext_game_robot_pos;//»úÆ÷ÈËÎ»ÖÃ£¨0x0203£©
-extern ext_buff_t                                 ext_buff;//»úÆ÷ÈËÔöÒæ£¨0x0204£©
-extern aerial_robot_energy_t                      ext_aerial_robot_energy;//¿ÕÖĞ»úÆ÷ÈËÄÜÁ¿×´Ì¬£¨0x0205£©
-extern ext_robot_hurt_t                           ext_robot_hurt;//ÉËº¦×´Ì¬£¨0x0206£©
-extern ext_shoot_data_t                           ext_shoot_data;//ÊµÊ±Éä»÷ĞÅÏ¢£¨0x0207£©
-extern ext_bullet_remaining_t                     ext_bullet_remaining;//×Óµ¯Ê£Óà·¢ÉäÊı(0x0208)
-extern ext_rfid_status_t                          ext_rfid_status;//»úÆ÷ÈËRFID×´Ì¬(0x0209)
-extern ext_dart_client_cmd_t                      ext_dart_client_cmd;//·ÉïÚ»úÆ÷ÈË¿Í»§¶ËÖ¸ÁîÊı¾İ(0x020A)
+extern ext_game_status_t                           ext_game_state;// ??????(0x0001)
+extern ext_game_status_t                           ext_game_state;// ??????(0x0001)
+extern ext_game_result_t                          ext_game_result;//??????(0x0002)
+extern ext_game_robot_HP_t                 ext_game_robot_survivors;//????????(0x0003)
+//extern ext_dart_status_t                          ext_dart_status;//??????(0x0004)
+extern ext_event_data_t                           ext_event_data;//???????(0x0101)
+extern ext_supply_projectile_action_t             ext_supply_projectile_action;//???????(0x0102)
+//extern ext_supply_projectile_booking_t            ext_supply_projectile_booking;//???????(0x0103)
+extern ext_referee_warning_t                      ext_referee_warning;//??????(0x0104)
+extern ext_dart_remaining_time_t                  ext_dart_remaining_time;//????????(0x0105)
+extern ext_game_robot_status_t                    ext_game_robot_status;//???????(0x0201)
+extern ext_power_heat_data_t                      ext_power_heat_data;////????????(0x0202)
+extern ext_game_robot_pos_t                       ext_game_robot_pos;//?????(0x0203)
+extern ext_buff_t                                 ext_buff;//?????(0x0204)
+extern aerial_robot_energy_t                      ext_aerial_robot_energy;//?????????(0x0205)
+extern ext_robot_hurt_t                           ext_robot_hurt;//????(0x0206)
+extern ext_shoot_data_t                           ext_shoot_data;//??????(0x0207)
+extern ext_bullet_remaining_t                     ext_bullet_remaining;//???????(0x0208)
+extern ext_rfid_status_t                          ext_rfid_status;//???RFID??(0x0209)
+extern ext_dart_client_cmd_t                      ext_dart_client_cmd;//????????????(0x020A)
 extern graphic_data_struct_t                      graphic_data_struct;
 
-extern ext_student_interactive_header_data_t      ext_student_interactive_header_data;//½»»¥Êı¾İ½ÓÊÕĞÅÏ¢£¨0x0301£©
+extern ext_student_interactive_header_data_t      ext_student_interactive_header_data;//????????(0x0301)
 extern ext_client_custom_graphic_delete_t         ext_client_custom_graphic_delete;
 extern ext_client_custom_graphic_single_t         ext_client_custom_graphic_single;
 extern ext_client_custom_graphic_double_t         ext_client_custom_graphic_double;
 extern ext_client_custom_graphic_five_t           ext_client_custom_graphic_five;
 extern ext_client_custom_graphic_seven_t          ext_client_custom_graphic_seven;
-//extern ext_robot_command_t                        ext_robot_command;//Ğ¡µØÍ¼½»»¥Êı¾İ£¨0x0303£©
-extern robot_interactive_data_t                   robot_interactive_data;  //½»»¥Êı¾İ
+//extern ext_robot_command_t                        ext_robot_command;//???????(0x0303)
+extern robot_interactive_data_t                   robot_interactive_data;  //????
 
 
 
@@ -561,7 +583,7 @@ student_interactive_header = 0x0301, /*!< send by user, max frequency = 10Hz */
 robot_command = 0x0302,
 } ext_cmd_id_t;
 
-typedef __packed struct {     //Ö¡Í·Êı¾İ
+typedef __packed struct {     //????
 	uint8_t     sof;                    /*!< Fixed value 0xA5 */
 	uint16_t    data_length;            /*!< Length of next data pack */
 	uint8_t     seq;                    /*!< Pack sequene id */
@@ -576,7 +598,7 @@ typedef enum {
 	robotid_red_infantry_3 = 5,
 	robotid_red_aerial = 6,
 	robotid_red_sentry = 7,
-	robotid_red_radar = 9,         //ĞÂÔöºì·½À×´ïÕ¾ID
+	robotid_red_radar = 9,         
 	robotid_blue_hero = 101,
 	robotid_blue_engineer = 102,
 	robotid_blue_infantry_1 = 103,
@@ -584,7 +606,7 @@ typedef enum {
 	robotid_blue_infantry_3 = 105,
 	robotid_blue_aerial = 106,
 	robotid_blue_sentry = 107,
-	robotid_blue_radar = 109,     //ĞÂÔöÀ¶·½À×´ïÕ¾ID 
+	robotid_blue_radar = 109,
 
 	clientid_red_hero = 0x0101,
 	clientid_red_engineer = 0x0102,
@@ -599,19 +621,6 @@ typedef enum {
 	clientid_blue_infantry_3 = 0x0169,
 	clientid_blue_aerial = 0x016A,
 } ext_id_t;
-
-//typedef __packed union {
-//    uint8_t     masks;
-//    __packed struct {
-//        uint8_t     led1 : 1;
-//        uint8_t     led2 : 1;
-//        uint8_t     led3 : 1;
-//        uint8_t     led4 : 1;
-//        uint8_t     led5 : 1;
-//        uint8_t     led6 : 1;
-//        uint8_t     : 2;
-//    } masks_bits;
-//} ext_client_custom_data_mask_t;
 
 typedef __packed struct {
 	ext_frame_header_t              header;
@@ -667,6 +676,6 @@ extern void init_referee_struct_data(void);
 extern void referee_data_solve(uint8_t *frame);
 
 extern void get_chassis_power_and_buffer(fp32 *power, fp32 *buffer);
-
+extern ext_robot_command_t                        ext_robot_command; 
 extern uint8_t get_robot_id(void);
 #endif  /*__REFEREEINFO_H__*/

@@ -61,18 +61,20 @@ void UART_DMA_SEND(int data){
 	
 	
 	uint8_t temp_char;
-	for(i=0;i<len/2;i++){
-			temp_char=u8_sendbuffer[i];
-			u8_sendbuffer[i]=u8_sendbuffer[len-i-1];
-			u8_sendbuffer[len-1-i]=temp_char;
-		}
-		u8_sendbuffer[len]='}';
-		len++;
-		u8_sendbuffer[len]='\n';
-#ifndef AutoAim		
+	for(i=0;i<len/2;i++)
+	{
+		temp_char=u8_sendbuffer[i];
+		u8_sendbuffer[i]=u8_sendbuffer[len-i-1];
+		u8_sendbuffer[len-1-i]=temp_char;
+	}
+	u8_sendbuffer[len]='}';
+	len++;
+	u8_sendbuffer[len]='\n';
+	
+#ifndef AutoAim		//1
 		usart1_tx_dma_enable(u8_sendbuffer,uart8datasize);
-#endif		
-		//usart1_tx_dma_enable(u8_sendbuffer,uart8datasize);
+#endif
+		usart1_tx_dma_enable(u8_sendbuffer,uart8datasize);
 		
 }
 

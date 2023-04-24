@@ -12,36 +12,53 @@
 #include "arm_math.h"
 #include "AHRS_middleware.h"
 #include "bsp_usart.h"
+#include "referee.h"
 
-#define AUTOAIM_FRAME_LEN 28
-#define AUTOAIM_FRAME_BUF AUTOAIM_FRAME_LEN * 2
+#define AUTOAIM_FRAME_RX_LEN 17
+#define AUTOAIM_FRAME_RX_BUF AUTOAIM_FRAME_RX_LEN * 2
+#define AUTOAIM_FRAME_TX_LEN 11
 #define AUTOAIM_FRAME_HEAD 0xf1
-#define AUTOAIM_FRAME_END 0xf2
+#define AUTOAIM_FRAME_TAIL 0xf2
 
 #pragma pack(1)
 typedef struct
 {
     uint8_t head;       // 1 byte
-    fp32 x_in_world;    // 4 byte mm 发送时复用为yaw degree
-    fp32 y_in_world;    // 4 byte mm 发送时复用为pitch degree
-    fp32 z_in_world;    // 4 byte mm
-    fp32 vx_in_world;   // 4 byte mm/ms
-    fp32 vy_in_world;   // 4 byte mm/ms
-    fp32 vz_in_world;   // 4 byte mm/ms
+    uint8_t stamp;      // 1 byte
+    int16_t x_in_imu;   // 2 byte 单位mm
+    int16_t y_in_imu;   // 2 byte 单位mm
+    int16_t z_in_imu;   // 2 byte 单位mm
+    int16_t vx_in_imu;  // 2 byte 单位m/s=mm/ms
+    int16_t vy_in_imu;  // 2 byte 单位m/s=mm/ms
+    int16_t vz_in_imu;  // 2 byte 单位m/s=mm/ms
     uint8_t flag;       // 1 byte
     uint8_t crc8_check; // 1 byte
-    uint8_t end;        // 1 byte
-} frame_t;
+    uint8_t tail;       // 1 byte
+} frame_rx_t;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct
+{
+    uint8_t head;         // 1 byte
+    uint8_t stamp;        // 1 byte
+    int16_t yaw;          // 2 byte 单位1e-4rad
+    int16_t pitch;        // 2 byte 单位1e-4rad
+    int16_t bullet_speed; // 2 byte 单位m/s=mm/ms
+    uint8_t flag;         // 1 byte
+    uint8_t crc8_check;   // 1 byte
+    uint8_t tail;         // 1 byte
+} frame_tx_t;
 #pragma pack()
 
 typedef struct
 {
-    fp32 x_in_world;  // mm
-    fp32 y_in_world;  // mm
-    fp32 z_in_world;  // mm
-    fp32 vx_in_world; // mm/ms
-    fp32 vy_in_world; // mm/ms
-    fp32 vz_in_world; // mm/ms
+    fp32 x_in_imu;  // mm
+    fp32 y_in_imu;  // mm
+    fp32 z_in_imu;  // mm
+    fp32 vx_in_imu; //
+    fp32 vy_in_imu; //
+    fp32 vz_in_imu; //
     uint8_t flag;
     uint8_t outdated_count;
 } autoaim_target_t;
@@ -49,44 +66,44 @@ typedef struct
 extern UART_HandleTypeDef huart1;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 
-uint8_t autoaim_frame_tx_buf[AUTOAIM_FRAME_LEN];
-uint8_t autoaim_frame_rx_buf[2][AUTOAIM_FRAME_BUF];
-frame_t frame_rx;
-frame_t frame_tx;
+uint8_t autoaim_frame_tx_buf[AUTOAIM_FRAME_TX_LEN];
+uint8_t autoaim_frame_rx_buf[2][AUTOAIM_FRAME_RX_BUF];
+frame_rx_t frame_rx;
+frame_tx_t frame_tx;
 autoaim_target_t autoaim_target;
 
 void usart1_rx_dma_init(uint8_t *rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_num);
 uint8_t unpack_frame(uint8_t *autoaim_buf);
-void pack_frame(uint8_t *buff, frame_t *frame);
+void pack_frame(uint8_t *buff, frame_tx_t *frame);
 
 void autoaim_target_reset(void)
 {
-    autoaim_target.x_in_world = 0.0f;
-    autoaim_target.y_in_world = 0.0f;
-    autoaim_target.z_in_world = 0.0f;
-    autoaim_target.vx_in_world = 0.0f;
-    autoaim_target.vy_in_world = 0.0f;
-    autoaim_target.vz_in_world = 0.0f;
+    autoaim_target.x_in_imu = 0.0f;
+    autoaim_target.y_in_imu = 0.0f;
+    autoaim_target.z_in_imu = 0.0f;
+    autoaim_target.vx_in_imu = 0.0f;
+    autoaim_target.vy_in_imu = 0.0f;
+    autoaim_target.vz_in_imu = 0.0f;
     autoaim_target.outdated_count = 100;
 }
 
 void autoaim_init(void)
 {
     autoaim_target_reset();
-    usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_BUF);
+    usart1_rx_dma_init(autoaim_frame_rx_buf[0], autoaim_frame_rx_buf[1], AUTOAIM_FRAME_RX_BUF);
 }
 
 void set_autoaim_angle(fp32 *add_yaw_set, fp32 *add_pitch_set, fp32 absolute_yaw_set, fp32 absolute_pitch_set)
 {
     if (autoaim_target.outdated_count < 100)
     {
-        fp32 target_yaw_in_world = 0.0f;
-        fp32 target_pitch_in_world = 0.0f;
+        fp32 target_yaw_in_imu = 0.0f;
+        fp32 target_pitch_in_imu = 0.0f;
         // if (autoaim_target.outdated_count < 20)
         // {
-        //     autoaim_target.x_in_world += autoaim_target.vx_in_world;
-        //     autoaim_target.y_in_world += autoaim_target.vy_in_world;
-        //     autoaim_target.z_in_world += autoaim_target.vz_in_world;
+        //     autoaim_target.x_in_imu += autoaim_target.vx_in_imu;
+        //     autoaim_target.y_in_imu += autoaim_target.vy_in_imu;
+        //     autoaim_target.z_in_imu += autoaim_target.vz_in_imu;
         //     autoaim_target.outdated_count++;
         // }
 
@@ -94,12 +111,12 @@ void set_autoaim_angle(fp32 *add_yaw_set, fp32 *add_pitch_set, fp32 absolute_yaw
         // yaw：操作手视角下，枪管向左为正方向
         // pitch: 抬枪为正方向
         fp32 xz_length;
-        arm_sqrt_f32(autoaim_target.x_in_world * autoaim_target.x_in_world + autoaim_target.z_in_world * autoaim_target.z_in_world, &xz_length);
-        target_yaw_in_world = -atan2(autoaim_target.x_in_world, autoaim_target.z_in_world);
-        target_pitch_in_world = -atan2(autoaim_target.y_in_world, xz_length);
+        arm_sqrt_f32(autoaim_target.x_in_imu * autoaim_target.x_in_imu + autoaim_target.z_in_imu * autoaim_target.z_in_imu, &xz_length);
+        target_yaw_in_imu = -atan2(autoaim_target.x_in_imu, autoaim_target.z_in_imu);
+        target_pitch_in_imu = -atan2(autoaim_target.y_in_imu, xz_length);
 
-        *add_yaw_set = target_yaw_in_world - absolute_yaw_set;
-        *add_pitch_set = target_pitch_in_world - absolute_pitch_set;
+        *add_yaw_set = target_yaw_in_imu - absolute_yaw_set;
+        *add_pitch_set = target_pitch_in_imu - absolute_pitch_set;
         // *add_pitch_set = 0.0f; // 机械没装平衡补偿，先禁掉
     }
     else
@@ -162,10 +179,10 @@ void USART1_IRQHandler(void)
             __HAL_DMA_DISABLE(&hdma_usart1_rx);
 
             // 获取接收数据长度，长度 = 设定长度 - 剩余长度
-            this_time_fram_len = AUTOAIM_FRAME_BUF - hdma_usart1_rx.Instance->NDTR;
+            this_time_fram_len = AUTOAIM_FRAME_RX_BUF - hdma_usart1_rx.Instance->NDTR;
 
             // 重新设定数据长度
-            hdma_usart1_rx.Instance->NDTR = AUTOAIM_FRAME_BUF;
+            hdma_usart1_rx.Instance->NDTR = AUTOAIM_FRAME_RX_BUF;
 
             // 设定缓冲区2
             hdma_usart1_rx.Instance->CR |= DMA_SxCR_CT;
@@ -173,7 +190,7 @@ void USART1_IRQHandler(void)
             // 使能DMA
             __HAL_DMA_ENABLE(&hdma_usart1_rx);
 
-            if (this_time_fram_len == AUTOAIM_FRAME_LEN)
+            if (this_time_fram_len == AUTOAIM_FRAME_RX_LEN)
             {
                 unpack_frame(autoaim_frame_rx_buf[0]);
             }
@@ -185,10 +202,10 @@ void USART1_IRQHandler(void)
             __HAL_DMA_DISABLE(&hdma_usart1_rx);
 
             // 获取接收数据长度，长度 = 设定长度 - 剩余长度
-            this_time_fram_len = AUTOAIM_FRAME_BUF - hdma_usart1_rx.Instance->NDTR;
+            this_time_fram_len = AUTOAIM_FRAME_RX_BUF - hdma_usart1_rx.Instance->NDTR;
 
             // 重新设定数据长度
-            hdma_usart1_rx.Instance->NDTR = AUTOAIM_FRAME_BUF;
+            hdma_usart1_rx.Instance->NDTR = AUTOAIM_FRAME_RX_BUF;
 
             // 设定缓冲区1
             hdma_usart1_rx.Instance->CR &= ~(DMA_SxCR_CT);
@@ -196,7 +213,7 @@ void USART1_IRQHandler(void)
             // 使能DMA
             __HAL_DMA_ENABLE(&hdma_usart1_rx);
 
-            if (this_time_fram_len == AUTOAIM_FRAME_LEN)
+            if (this_time_fram_len == AUTOAIM_FRAME_RX_LEN)
             {
                 unpack_frame(autoaim_frame_rx_buf[1]);
             }
@@ -206,40 +223,63 @@ void USART1_IRQHandler(void)
 
 uint8_t unpack_frame(uint8_t *autoaim_buf)
 {
-    memcpy((uint8_t *)&frame_rx, autoaim_buf, AUTOAIM_FRAME_LEN);
-    uint8_t crc8_check = get_CRC8_check_sum((uint8_t *)&frame_rx, AUTOAIM_FRAME_LEN - 2, 0xff);
+    memcpy((uint8_t *)&frame_rx, autoaim_buf, AUTOAIM_FRAME_RX_LEN);
+    uint8_t crc8_check = get_CRC8_check_sum((uint8_t *)&frame_rx, AUTOAIM_FRAME_RX_LEN - 2, 0xff);
     if (frame_rx.head != AUTOAIM_FRAME_HEAD || frame_rx.crc8_check != crc8_check)
     {
         return 0;
     }
 
-    autoaim_target.x_in_world = frame_rx.x_in_world;
-    autoaim_target.y_in_world = frame_rx.y_in_world;
-    autoaim_target.z_in_world = frame_rx.z_in_world;
-    autoaim_target.vx_in_world = frame_rx.vx_in_world;
-    autoaim_target.vy_in_world = frame_rx.vy_in_world;
-    autoaim_target.vz_in_world = frame_rx.vz_in_world;
+    autoaim_target.x_in_imu = (fp32)frame_rx.x_in_imu;
+    autoaim_target.y_in_imu = (fp32)frame_rx.y_in_imu;
+    autoaim_target.z_in_imu = (fp32)frame_rx.z_in_imu;
+    autoaim_target.vx_in_imu = (fp32)frame_rx.vx_in_imu / 1e3f;
+    autoaim_target.vy_in_imu = (fp32)frame_rx.vy_in_imu / 1e3f;
+    autoaim_target.vz_in_imu = (fp32)frame_rx.vz_in_imu / 1e3f;
     autoaim_target.flag = frame_rx.flag;
     autoaim_target.outdated_count = 0; // 新鲜出炉的数据
     return 1;
 }
 
+static uint8_t send_count = 0;
 void send_to_computer(fp32 absolute_yaw, fp32 absolute_pitch)
 {
-    frame_tx.head = AUTOAIM_FRAME_HEAD;
-    frame_tx.end = AUTOAIM_FRAME_END;
+    static uint8_t stamp_count = 0;
 
-    // frame_tx.x_in_world = absolute_yaw * 57.3f;
-    frame_tx.x_in_world = absolute_yaw;
-    frame_tx.y_in_world = absolute_pitch * 57.3f;
-    frame_tx.flag = 0;
+    send_count++;
+    // 每8ms向上位机发一次数据
+    if (send_count != 8) {
+        HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13, GPIO_PIN_RESET);
+        return;
+    }
+
+	send_count = 0;
+	
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13, GPIO_PIN_SET);
+
+    frame_tx.head = AUTOAIM_FRAME_HEAD;
+    frame_tx.tail = AUTOAIM_FRAME_TAIL;
+
+    frame_tx.stamp = stamp_count;
+
+    frame_tx.yaw = (int16_t)(absolute_yaw * 180.f / PI * 1e2f);
+    frame_tx.pitch = (int16_t)(absolute_pitch * 180.f / PI * 1e2f);
+
+    frame_tx.bullet_speed = (int16_t)(ext_shoot_data.bullet_speed * 1e2f);
+
+    frame_tx.flag = ext_game_robot_status.robot_id;
+
+    if (stamp_count == 255)
+        stamp_count = 0;
+    else
+        stamp_count += 1;
 
     pack_frame(autoaim_frame_tx_buf, &frame_tx);
-    usart1_tx_dma_enable(autoaim_frame_tx_buf, AUTOAIM_FRAME_LEN);
+    usart1_tx_dma_enable(autoaim_frame_tx_buf, AUTOAIM_FRAME_TX_LEN);
 }
 
-void pack_frame(uint8_t *buff, frame_t *frame)
+void pack_frame(uint8_t *buff, frame_tx_t *frame)
 {
-    memcpy(buff, frame, sizeof(frame_t));
-    buff[sizeof(frame_t) - 2] = get_CRC8_check_sum((uint8_t *)frame, sizeof(frame_t) - 2, 0xff);
+    memcpy(buff, frame, AUTOAIM_FRAME_TX_LEN);
+    buff[AUTOAIM_FRAME_TX_LEN - 2] = get_CRC8_check_sum((uint8_t *)frame, AUTOAIM_FRAME_TX_LEN - 2, 0xff);
 }

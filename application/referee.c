@@ -5,6 +5,9 @@ update: 2017.5.7
         全局变量说明见RefereeInfo.h
         支持上传3个float数据
 ******************/
+#include "bsp_usart.h"
+#include "chassis_task.h"
+#include "shoot.h"
 #include "referee.h"
 #include <cstdint>
 #include "gimbal_task.h"
@@ -16,48 +19,48 @@ update: 2017.5.7
 u16 cmd_id;  // 数据包ID
 // 裁判信息相关结构体  
 ext_game_status_t                           ext_game_status;// 比赛状态数据（0x0001）
-ext_game_result_t                          ext_game_result;//比赛结果数据(0x0002)
-ext_game_robot_HP_t                 ext_game_robot_HP;//机器人存存活数据（0x0003）
-//ext_dart_status_t                          ext_dart_status;//飞镖发射状态(0x0004)//新手册中没有
-ext_ICRA_buff_debuff_zone_status_t         ext_ICRA_buff_debuff_zone_status; //人工智能挑战赛加成与惩罚区状态(0x0005)
+ext_game_result_t                          	ext_game_result;//比赛结果数据(0x0002)
+ext_game_robot_HP_t                 		ext_game_robot_HP;//机器人存存活数据（0x0003）
+//ext_dart_status_t                        ext_dart_status;//飞镖发射状态(0x0004)//新手册中没有
+ext_ICRA_buff_debuff_zone_status_t         	ext_ICRA_buff_debuff_zone_status; //人工智能挑战赛加成与惩罚区状态(0x0005)
 
 
 
-ext_event_data_t                           ext_event_data;//场地时事件数据（0x0101）
-ext_supply_projectile_action_t             ext_supply_projectile_action;//补给站动作标识（0x0102）
+ext_event_data_t                           	ext_event_data;//场地时事件数据（0x0101）
+ext_supply_projectile_action_t             	ext_supply_projectile_action;//补给站动作标识（0x0102）
 //ext_supply_projectile_booking_t            ext_supply_projectile_booking;//补给站预约子弹（0x0103）//新手册中没有
-ext_referee_warning_t                      ext_referee_warning;//裁判警告信息(0x0104)
-ext_dart_remaining_time_t                  ext_dart_remaining_time;//飞镖发射口倒计时(0x0105)
+ext_referee_warning_t                      	ext_referee_warning;//裁判警告信息(0x0104)
+ext_dart_remaining_time_t                  	ext_dart_remaining_time;//飞镖发射口倒计时(0x0105)
 
 
-ext_game_robot_status_t                     ext_game_robot_status;//比赛机器人状态(0x0201)
-ext_power_heat_data_t                      ext_power_heat_data;////实时功率热量数据（0x0202）
-ext_game_robot_pos_t                       ext_game_robot_pos;//机器人位置（0x0203）
-ext_buff_t                                 ext_buff;//机器人增益（0x0204）
-aerial_robot_energy_t                      ext_aerial_robot_energy;//空中机器人能量状态（0x0205）
-ext_robot_hurt_t                           ext_robot_hurt;//伤害状态（0x0206）
-ext_shoot_data_t                           ext_shoot_data;//实时射击信息（0x0207）
-ext_bullet_remaining_t                     ext_bullet_remaining;//子弹剩余发射数(0x0208)
-ext_rfid_status_t                          ext_rfid_status;//机器人RFID状态(0x0209)
-ext_dart_client_cmd_t                      ext_dart_client_cmd;//飞镖机器人客户端指令数据(0x020A)
+ext_game_robot_status_t                    	ext_game_robot_status;//比赛机器人状态(0x0201)
+ext_power_heat_data_t                      	ext_power_heat_data;////实时功率热量数据（0x0202）
+ext_game_robot_pos_t                       	ext_game_robot_pos;//机器人位置（0x0203）
+ext_buff_t                                 	ext_buff;//机器人增益（0x0204）
+aerial_robot_energy_t                      	ext_aerial_robot_energy;//空中机器人能量状态（0x0205）
+ext_robot_hurt_t                           	ext_robot_hurt;//伤害状态（0x0206）
+ext_shoot_data_t                           	ext_shoot_data;//实时射击信息（0x0207）
+ext_bullet_remaining_t                     	ext_bullet_remaining;//子弹剩余发射数(0x0208)
+ext_rfid_status_t                          	ext_rfid_status;//机器人RFID状态(0x0209)
+ext_dart_client_cmd_t          				ext_dart_client_cmd;//飞镖机器人客户端指令数据(0x020A)
 
 //-------------0x0301部分开始-------------------
-ext_student_interactive_header_data_t      ext_student_interactive_header_data;//交互数据接收信息（0x0301）
+ext_student_interactive_header_data_t      	ext_student_interactive_header_data;//交互数据接收信息（0x0301）
 //client_custom_data_t                       client_custom_data;
-robot_interactive_data_t                   robot_interactive_data;//机器人间交互数据，内容 ID:0x0200~0x02FF
-ext_client_custom_graphic_delete_t         ext_client_custom_graphic_delete;//客户端删除图形，内容 ID:0x0100;
-graphic_data_struct_t                      graphic_data_struct;//图形数据
-ext_client_custom_graphic_single_t         ext_client_custom_graphic_single;//客户端绘制一个图形
-ext_client_custom_graphic_double_t         ext_client_custom_graphic_double;//客户端绘制两个图形
-ext_client_custom_graphic_five_t           ext_client_custom_graphic_five;//客户端绘制五个图形
-ext_client_custom_graphic_seven_t          ext_client_custom_graphic_seven;//客户端绘制七个图形
-ext_client_custom_character_t              ext_client_custom_character;//客户端绘制字符
+robot_interactive_data_t                   	robot_interactive_data;//机器人间交互数据，内容 ID:0x0200~0x02FF
+ext_client_custom_graphic_delete_t         	ext_client_custom_graphic_delete;//客户端删除图形，内容 ID:0x0100;
+graphic_data_struct_t                      	graphic_data_struct;//图形数据
+ext_client_custom_graphic_single_t         	ext_client_custom_graphic_single;//客户端绘制一个图形
+ext_client_custom_graphic_double_t         	ext_client_custom_graphic_double;//客户端绘制两个图形
+ext_client_custom_graphic_five_t            ext_client_custom_graphic_five;//客户端绘制五个图形
+ext_client_custom_graphic_seven_t           ext_client_custom_graphic_seven;//客户端绘制七个图形
+ext_client_custom_character_t               ext_client_custom_character;//客户端绘制字符
 //-------------0x0301部分结束-------------------
 
 
 //robot_interactive_data_t                 robot_interactive_data;交互数据接收信息(0x0302)
-ext_robot_command_t                        ext_robot_command; //小地图下发信息标识(0x0303)/*发送频率：触发时发送.*/
-ext_client_map_command_t                   ext_client_map_command; //小地图接收信息标识(0x0305)
+ext_robot_command_t                         ext_robot_command; //小地图下发信息标识(0x0303)/*发送频率：触发时发送.*/
+ext_client_map_command_t                    ext_client_map_command; //小地图接收信息标识(0x0305)
 
 frame_header_struct_t ext_referee_receive_header;
 frame_header_struct_t ext_referee_send_header;
@@ -70,7 +73,7 @@ u8 custom_info_counter = 0;  // 自定义数据包序号
 u8 seq = 0;  // 发过来的包序号
 u8 seq_real = 0;
 
-Bytes2Float bytes2float;  // flaot和字节互转
+Bytes2Float bytes2float;  // float和字节互转
 Bytes2U32 bytes2u32;  // flaot和u16互转
 
 u8 referee_message[64];  // 完整数据帧存放, 理论44就够。
@@ -79,31 +82,33 @@ u8 blood_counter = 0;  // (debug)被打计数
 
 int	shoot_seq = 0;//shoot number
 
+extern shoot_control_t shoot_control;//shoot state
+extern bool spinning_state;
+
+
 
 
 uint32_t last_time_tick_1ms_1 = 0;
 uint32_t time_interval_1 = 0;
 char str1[30];
 char str2[30];
-int MY_CLIENT_ID = clientid_red_hero;
+//int MY_CLIENT_ID = clientid_red_hero;
+ext_id_t MY_CLIENT_ID = clientid_red_hero;
 int MY_ROBOT_ID = robotid_red_hero;
 bool UI_if_init = 0;
 int UI_count = 0;
 void init_referee_struct_data(void)
 {
- //   memset(&referee_receive_header, 0, sizeof(frame_header_struct_t));
     memset(&ext_referee_send_header, 0, sizeof(frame_header_struct_t));
 
     memset(&ext_game_status, 0, sizeof(ext_game_status_t));
     memset(&ext_game_result, 0, sizeof(ext_game_result_t));
     memset(&ext_game_robot_HP, 0, sizeof(ext_game_robot_HP_t));
 
-
     memset(&ext_event_data, 0, sizeof(ext_event_data_t));
     memset(&ext_supply_projectile_action, 0, sizeof(ext_supply_projectile_action_t));
-//    memset(&ext_supply_projectile_booking, 0, sizeof(ext_supply_projectile_booking_t));
     memset(&ext_referee_warning, 0, sizeof(ext_referee_warning_t));
-
+	memset(&ext_dart_remaining_time,             0, sizeof(ext_dart_remaining_time));
 
     memset(&ext_game_robot_status, 0, sizeof(ext_game_robot_status_t));
     memset(&ext_power_heat_data, 0, sizeof(ext_power_heat_data_t));
@@ -113,12 +118,13 @@ void init_referee_struct_data(void)
     memset(&ext_robot_hurt, 0, sizeof(ext_robot_hurt_t));
     memset(&ext_shoot_data, 0, sizeof(ext_shoot_data_t));
     memset(&ext_bullet_remaining, 0, sizeof(ext_bullet_remaining_t));
-
+	memset(&ext_rfid_status,                     0, sizeof(ext_rfid_status));
+	memset(&ext_dart_client_cmd,                 0, sizeof(ext_dart_client_cmd));
 
     memset(&ext_student_interactive_header_data, 0, sizeof(ext_student_interactive_header_data_t));
-
-
-
+	memset(&robot_interactive_data,          0, sizeof(robot_interactive_data));
+	memset(&ext_robot_command,                   0, sizeof(ext_robot_command));
+	memset(&ext_client_map_command,              0, sizeof(ext_client_map_command));
 }
 
 void referee_data_solve(uint8_t *frame)
@@ -151,9 +157,13 @@ void referee_data_solve(uint8_t *frame)
             memcpy(&ext_game_robot_HP, frame + index, sizeof(ext_game_robot_HP_t));
         }
         break;
+        case ICRA_BUFF_DEBUFF_ZONE_STATUS_CMD_ID:
+        {
+            memcpy(&ext_ICRA_buff_debuff_zone_status, frame + index, sizeof(ext_ICRA_buff_debuff_zone_status_t));
+        }
+        break;
 
-
-        case FIELD_EVENTS_CMD_ID:
+        case EVENTS_DATA_CMD_ID:
         {
             memcpy(&ext_event_data, frame + index, sizeof(ext_event_data_t));
         }
@@ -163,11 +173,7 @@ void referee_data_solve(uint8_t *frame)
             memcpy(&ext_supply_projectile_action, frame + index, sizeof(ext_supply_projectile_action_t));
         }
         break;
-//        case SUPPLY_PROJECTILE_BOOKING_CMD_ID:
-//        {
-//            memcpy(&ext_supply_projectile_booking, frame + index, sizeof(ext_supply_projectile_booking_t));
-//        }
-//        break;
+
         case REFEREE_WARNING_CMD_ID:
         {
             memcpy(&ext_referee_warning, frame + index, sizeof(ext_referee_warning_t));
@@ -189,7 +195,7 @@ void referee_data_solve(uint8_t *frame)
             memcpy(&ext_game_robot_pos, frame + index, sizeof(ext_game_robot_pos_t));
         }
         break;
-        case BUFF_MUSK_CMD_ID:
+        case BUFF_CMD_ID:
         {
             memcpy(&ext_buff, frame + index, sizeof(ext_buff_t));
         }
@@ -214,9 +220,24 @@ void referee_data_solve(uint8_t *frame)
             memcpy(&ext_bullet_remaining, frame + index, sizeof(ext_bullet_remaining_t));
         }
         break;
+        case RFID_STATUS_CMD_ID:
+        {
+            memcpy(&ext_rfid_status, frame + index, sizeof(ext_rfid_status_t));
+        }
+        break;
+		case DART_CLIENT_CMD_CMD_ID:
+        {
+            memcpy(&ext_dart_client_cmd, frame + index, sizeof( ext_dart_client_cmd_t));
+        }
+        break;
         case STUDENT_INTERACTIVE_DATA_CMD_ID:
         {
             memcpy(&ext_student_interactive_header_data, frame + index, sizeof(ext_student_interactive_header_data_t));
+        }
+        break;
+        case ROBOT_COMMAND_CMD_ID://0x0303客户端下发信息
+        {
+            memcpy(&ext_robot_command, frame + index, sizeof(ext_robot_command_t));
         }
         break;
         default:
@@ -230,144 +251,96 @@ void get_chassis_power_and_buffer(fp32 *power, fp32 *buffer)
 {
     *power = ext_power_heat_data.chassis_power;
     *buffer = ext_power_heat_data.chassis_power_buffer;
-
 }
-
 
 uint8_t get_robot_id(void)
 {
     return ext_game_robot_status.robot_id;
 }
 
-//void UI_send_init() {
-//	if (ext_power_heat_data.chassis_volt > 0) {
-//		if (UI_if_init == 0) { //the first time to draw, need init
-//			if (ext_game_robot_status.robot_id == robotid_red_hero) {
-//				MY_CLIENT_ID = clientid_red_hero;
-//				MY_ROBOT_ID = robotid_red_hero;
-//			}
-//			else if (ext_game_robot_status.robot_id == robotid_blue_hero) {
-//				MY_CLIENT_ID = clientid_blue_hero;
-//				MY_ROBOT_ID = robotid_blue_hero;
-//			}
+//FROM INFANTRY:
+void UI_send_init(){
 
-//			if (UI_count == 0) {
-//				send_multi_graphic();//aim line
-//				UI_count = 1;
-//			}
-//			else if (UI_count == 1) {
-//				//		send_pitch_graphic(1); pitch angle keshihua
-//				send_single_icon("x", 1800, 700, 1, 2); //CAP
-//				UI_count = 2;
-//			}
-
-//			else if (UI_count == 2) {
-//				send_single_icon("z", 1800, 800, 1, 4);
-//				UI_count = 3;
-//			}
-//			//FRIC 
-//			else if (UI_count == 3) {
-//				send_single_icon("y", 1800, 750, 1, 4);
-//				UI_count = 4;
-//			}
-
-//			else if (UI_count == 4) {
-//				send_single_icon("w", 1800, 850, 1, 4);
-//				UI_count = 5;
-//			}
-//			else if (UI_count == 5) {
-//				UI_if_init = 1;
-//				UI_count = 0;
-//			}
-//		}
-
-//		else if (UI_if_init == 1)
-//		{
-
-
-//			if (UI_count == 0) {
-//				//		send_pitch_graphic(2);
-//				if (24000 < SCM_rx_message->cap_vol) {
-//					send_single_icon("x", 1800, 700, 2, 2);
-//				}
-//				else if (21000 < SCM_rx_message->cap_vol) {
-//					send_single_icon("x", 1800, 700, 2, 1);
-//				}
-//				else {
-//					send_single_icon("x", 1800, 700, 2, 4);
-//				}
-//				UI_count = 1;
-//			}
-
-//			else if (UI_count == 1)
-//			{
-//				if (1) {//此处代表摩擦轮开了 frictionState == Friction_ON
-//					send_single_icon("z", 1800, 800, 2, 2);
-//				}
-//				else {
-//					send_single_icon("z", 1800, 800, 2, 4);
-//				}
-//				UI_count = 2;
-//			}
-//			//FRIC 
-//			else if (UI_count == 2) {
-//				if (1) {  //Feed_Mode == -1
-//					send_single_icon("y", 1800, 750, 2, 4);
-//				}
-//				else {
-//					send_single_icon("y", 1800, 750, 2, 2);
-//				}
-//				UI_count = 0;
-//			}
-////			else if (UI_count == 3) {
-////				if ((RC_Ex_Ctl.key.v & KEY_PRESSED_OFFSET_Z) == KEY_PRESSED_OFFSET_Z) {
-////					send_single_icon("w", 1800, 850, 2, 2);
-////				}
-////				else {
-////					send_single_icon("w", 1800, 850, 2, 4);
-////				}
-////				UI_count = 0;
-////			}
-
-//		}
-//	}
-//}
-
-void UI_send_update() {/*
-	if (	UI_if_init == 1){
-	send_pitch_graphic(2);
-
-	memset(str1,' ',30);
-	if (frictionState == Friction_ON){
-		memcpy(str1,"FRIC__ON",8);
-		send_string(str1,"z",1800,800,2,1);
-	}
-	else {
-		memcpy(str1,"FRIC_OFF",8);
-		send_string(str1,"z",1800,800,2,2);
-	}
-
-
-	memset(str2,' ',30);
-	if (Feed_Mode == Feed_stuck){
-		memcpy(str2,"STUCK!!!!",9);
-		send_string(str2,"y",1800,750,2,2);
-	}
-	else if(Feed_Mode == Feed_singleshoot){
-		memcpy(str2,"ONE_SHOOT",9);
-		send_string(str2,"y",1800,750,2,1);
-	}
-	else if(Feed_Mode == Feed_clearbomb){
-		memcpy(str2,"FULL_FIRE",9);
-		send_string(str2,"y",1800,750,2,2);
-	}
-	else{
-		memcpy(str2,"FEED_STOP",9);
-		send_string(str2,"y",1800,750,2,1);
-	}
-}*/
+	if(	UI_if_init == 0)//the first time to draw, need init
+	{
+		switch(ext_game_robot_status.robot_id)
+		{
+			case robotid_red_hero:{
+					MY_CLIENT_ID = clientid_red_hero;
+					MY_ROBOT_ID = robotid_red_hero;	
+				  break;
+			}
+			case robotid_red_infantry_1:{
+					MY_CLIENT_ID = clientid_red_infantry_1;
+					MY_ROBOT_ID = robotid_red_infantry_1;	
+				  break;
+			}
+			case robotid_red_infantry_2:{
+					MY_CLIENT_ID = clientid_red_infantry_2;
+					MY_ROBOT_ID = robotid_red_infantry_2;	
+				  break;					
+			}
+			case robotid_red_infantry_3:{
+					MY_CLIENT_ID = clientid_red_infantry_3;
+					MY_ROBOT_ID = robotid_red_infantry_3;
+				  break;					
+			}
+		
+			case robotid_blue_hero:{
+					MY_CLIENT_ID = clientid_blue_hero;
+					MY_ROBOT_ID = robotid_blue_hero;	
+				  break;
+			}
+			case robotid_blue_infantry_1:{
+					MY_CLIENT_ID = clientid_blue_infantry_1;
+					MY_ROBOT_ID = robotid_blue_infantry_1;	
+				  break;
+			}
+			case robotid_blue_infantry_2:{
+					MY_CLIENT_ID = clientid_blue_infantry_2;
+					MY_ROBOT_ID = robotid_blue_infantry_2;
+				  break;					
+			}
+			case robotid_blue_infantry_3:{
+					MY_CLIENT_ID = clientid_blue_infantry_3;
+					MY_ROBOT_ID = robotid_blue_infantry_3;
+				  break;					
+			}
+		}
+		send_multi_graphic();//aim line瞄准线
+    }
 }
 
+
+void UI_send_update(){
+	if (UI_if_init == 1)
+	{
+		if(UI_count == 0)
+		{
+			if(24000<SCM_rx_message->cap_vol)
+			{
+				send_single_icon("x", 1800, 700, 2, 2);//绿色
+			}                                      //24000以上
+			else if(21000<SCM_rx_message->cap_vol)
+			{
+				send_single_icon("x", 1800, 700, 2, 1);//红蓝主色
+			}	                                     //21000~24000
+			else 
+			{
+				send_single_icon("x", 1800, 700, 2, 4);//紫红色
+			}	     
+			UI_count = 1;
+		}
+		else if(UI_count == 1)
+		{
+			UI_count = 2;
+		}
+		else if(UI_count == 2)
+		{
+			UI_count = 0;
+		}
+	}
+}
 
 void init_referee_info() {
 	ext_game_robot_pos.x = 0;
@@ -515,7 +488,6 @@ uint32_t Verify_CRC16_Check_Sum(uint8_t* pchMessage, uint32_t dwLength) {
 	return ((wExpected & 0xff) == pchMessage[dwLength - 2] && ((wExpected >> 8) & 0xff) == pchMessage[dwLength - 1]);
 }
 
-
 /*
 ** Descriptions: 增添 CRC16 至信息数据尾部
 ** Input: 信息数据(尾部需留空2位以加入校验码), 信息数据长度
@@ -531,11 +503,6 @@ void Append_CRC16_Check_Sum(uint8_t* pchMessage, uint32_t dwLength) {
 	pchMessage[dwLength - 1] = (u8)((wCRC >> 8) & 0x00ff);
 }
 
-
-///////////////////
-
-
-
 // 单字节数组转u16(2字节), 高低位反序
 uint16_t _bytes2u16(uint8_t* chosen_Message) {
 	uint32_t temp = 0;
@@ -546,7 +513,6 @@ uint16_t _bytes2u16(uint8_t* chosen_Message) {
 	return temp;
 }
 
-
 // 单字节数组转u32(4字节), 高低位未知
 uint32_t _bytes4u32(uint8_t* chosen_Message) {
 	bytes2u32.b[0] = chosen_Message[0];
@@ -555,7 +521,6 @@ uint32_t _bytes4u32(uint8_t* chosen_Message) {
 	bytes2u32.b[3] = chosen_Message[3];
 	return bytes2u32.u32_value;
 }
-
 
 // 单字节数组转float(4字节), 高低位正常
 float _bytes2float(uint8_t* chosen_Message) {
@@ -650,13 +615,6 @@ void ext_supply_projectile_action_interpret(uint8_t* ext_supply_projectile_actio
 	memcpy((uint8_t*)&ext_supply_projectile_action.supply_projectile_num, ext_supply_projectile_action_Message + 3, 1);
 }
 
-//补给站预约子弹（0x0103）
-//void ext_supply_projectile_booking_interpret(uint8_t * ext_supply_projectile_booking_Message)
-//{
-//	memcpy((uint8_t*)&ext_supply_projectile_booking.supply_projectile_id,ext_supply_projectile_booking_Message,1);
-//	memcpy((uint8_t*)&ext_supply_projectile_booking.supply_num,ext_supply_projectile_booking_Message+1,1);
-//}
-
 //裁判警告信息：cmd_id(0x0104)
 void ext_referee_warning_interpret(uint8_t* ext_referee_warning_t_Message)
 {
@@ -705,12 +663,9 @@ void ext_power_heat_data_interpret(uint8_t* ext_power_heat_data_Message)
 {
 
 	memcpy((uint8_t*)&ext_power_heat_data.chassis_volt, ext_power_heat_data_Message, 2);
-	//ext_power_heat_data.chassis_volt;       //因为warning:expression has no effect
 	memcpy((uint8_t*)&ext_power_heat_data.chassis_current, ext_power_heat_data_Message + 2, 2);
 	memcpy((float*)&ext_power_heat_data.chassis_power, ext_power_heat_data_Message + 4, 4);
-	// float temp;
-	//ext_power_heat_data.chassis_power=_bytes2float(ext_power_heat_data_Message+4);
-	//ext_power_heat_data.chassis_power_buffer=_bytes2float(ext_power_heat_data_Message+8);
+
 	memcpy((uint8_t*)&ext_power_heat_data.chassis_power_buffer, (ext_power_heat_data_Message + 8), 2);
 	memcpy((uint8_t*)&ext_power_heat_data.shooter_id1_17mm_cooling_heat, ext_power_heat_data_Message + 10, 2);
 	memcpy((uint8_t*)&ext_power_heat_data.shooter_id2_17mm_cooling_heat, ext_power_heat_data_Message + 12, 2);
@@ -739,7 +694,6 @@ void ext_buff_musk_interpret(uint8_t* ext_buff_musk_Message)
 void aerial_robot_energy_interpret(uint8_t* aerial_robot_energy_Message)
 {
 	
-//	memcpy((uint8_t*)&ext_aerial_robot_energy.energy_point,aerial_robot_energy_Message,1);
     memcpy((uint8_t*)&ext_aerial_robot_energy.attack_time, aerial_robot_energy_Message + 1, 2);
 }
 
@@ -832,7 +786,7 @@ void ext_client_custom_character_interpret(uint8_t* ext_client_custom_character_
 	memcpy((uint8_t*)ext_client_custom_character.data, ext_client_custom_character_Message+15, 30);
 
 }
-//
+
 void ext_student_interactive_header_data_interpret(uint8_t* ext_student_interactive_header_data_Message)
 {
 	memcpy((uint8_t*)&ext_student_interactive_header_data.data_cmd_id, ext_student_interactive_header_data_Message, 2);//数据段的内容ID
@@ -860,32 +814,8 @@ void ext_student_interactive_header_data_interpret(uint8_t* ext_student_interact
 	{
 		robot_interactive_data_interpret(content);
 	}
-//	memcpy((uint8_t*)&ext_student_interactive_header_data.blood_value, ext_student_interactive_header_data_Message + 6, 2);
 }
-//////////////////////////////////////////////////
-//客户端自定义数据（0x0301），内容ID：data_cmd(0xD180)
-//void client_custom_data_interpret(uint8_t * client_custom_data_Message)
-//{
-//	memcpy((uint8_t*)&client_custom_data.data1,client_custom_data_Message+6,4);
-//	memcpy((uint8_t*)&client_custom_data.data2,client_custom_data_Message+10,4);
-//	memcpy((uint8_t*)&client_custom_data.data3,client_custom_data_Message+14,4);
-//	memcpy((uint8_t*)&client_custom_data.masks,client_custom_data_Message+18,1);
-//	
-//}
 
-//void robot_interactive_data_interpret(uint8_t * robot_interactive_data_Message)
-//{
-	//memcpy(&robot_interactive_data.data,robot_interactive_data_Message,sizeof(data));
-
-//}
-
-////交互数据接收信息（0x0302）
-//void robot_interactive_data_interpret(uint8_t* robot_interactive_data_Message)
-//{
-//	memcpy((uint8_t*)robot_interactive_data.data, robot_interactive_data_Message, 30);
-//}
-
-////交互数据接收信息（0x0303）
 
 void ext_robot_command_interpret03(uint8_t * ext_robot_command_Message)
 {
@@ -894,7 +824,6 @@ void ext_robot_command_interpret03(uint8_t * ext_robot_command_Message)
 	memcpy((float*)&ext_robot_command.target_position_z, ext_robot_command_Message + 8, 4);
 	memcpy((uint8_t*)&ext_robot_command.commd_keyboard, ext_robot_command_Message + 12, 1);
 	memcpy((uint8_t*)&ext_robot_command.target_robot_ID, ext_robot_command_Message + 13, 2);
-
 }
 
 ////图传遥控信息标识（0x0304）
@@ -915,9 +844,7 @@ void ext_client_map_command_interpret(uint8_t* ext_client_map_command_Message)
 	memcpy((uint8_t*)&ext_client_map_command.target_robot_ID, ext_client_map_command_Message, 2);
 	memcpy((float*)&ext_client_map_command.target_position_x, ext_client_map_command_Message+2, 4);
 	memcpy((float*)&ext_client_map_command.target_position_y, ext_client_map_command_Message+6, 4);
-
 }
-
 
 
 // 完整校验数据帧, CRC8和CRC16
@@ -926,13 +853,7 @@ u8 Verify_frame(uint8_t* frame) {
 	if (frame[0] != sof) return false;
 	frame_length = _bytes2u16(&frame[1]) + 5 + 2 + 2;
 	if (Verify_CRC8_Check_Sum(frame, 5) && Verify_CRC16_Check_Sum(frame, frame_length)) {
-		//		if(seq > frame[3]) {
-		//			return false;
-		//		}
-		//		else {
-		//			seq = frame[3];
-		//			return true;
-		//		}
+
 		return true;
 	}
 	else {
@@ -940,34 +861,12 @@ u8 Verify_frame(uint8_t* frame) {
 	}
 }
 
-//u8 blink_time=0;
-//// 数字闪烁显示测试
-//void data_blink(void) {
-//	blink_time++;
-//	if(blink_time<60) {
-////		blink_time=0;
-//		extShowData.data3=8;
-//		return;
-//	}
-//	if(blink_time<120) {
-//		extShowData.data3 = 8.8888888888888888f;
-//		return;
-//	}
-//	if(blink_time>120)  {
-//		blink_time=0;
-//		return;
-//	}
-//}
-
 void update_from_dma(void) {
-	//int i;
+	
 	u8 USART6_dma_x2[2 * USART6_dma_rx_len];
 	memcpy(USART6_dma_x2, USART6_dma, USART6_dma_rx_len);
 	memcpy(USART6_dma_x2 + USART6_dma_rx_len, USART6_dma, USART6_dma_rx_len);
 
-	//	for(i=0;i<USART6_dma_rx_len;i++) {
-	//		frame_interpret(USART6_dma_x2+i);
-	//	}
 	frame_interpret(USART6_dma_x2, 2 * USART6_dma_rx_len);
 	return;
 }
@@ -982,36 +881,21 @@ bool vrerify_frame(uint8_t* frame) {
 bool frame_interpret(uint8_t* _frame, uint16_t size) {
 	for (uint16_t i = 0; i < size; i++) {
 		if (_frame[i] == REFEREE_FRAME_HEADER_SOF && vrerify_frame(&_frame[i])) {
-			//            static uint8_t seq_ex = 0;
-			//            uint8_t seq = frame[3];
-			//            if(frame[3]<=seq_ex && (seq_ex-frame[3])>=240) {
-			//                continue;
-			//            }
-			//            seq_ex = seq;
+
 			uint8_t* frame = &_frame[i];
 			uint16_t length = (uint16_t)(frame[1] | (frame[2] << 8));
 			i += length + 7;
 
 			ext_cmd_id_t cmd_id = (ext_cmd_id_t)(frame[5] | (frame[6] << 8));
 
-			//u8 blood_seq=0;
-			//// 使用完整数据帧更新全部裁判信息相关结构体。(带校验)
-			//u8 frame_interpret(uint8_t * frame) { 
-			//    if(Verify_frame(frame) == true) {
-			//		if(seq_real>=frame[3]&&(seq_real-frame[3])<100) {
-			//			return false;
-			//		}
-			////		offical_data_flag=0;
-			//		memcpy(&cmd_id,&frame[5],2);
-			//    //cmdID = _bytes2u16(&frame[5]);/////////////////////////////
-			//		seq_real=frame[3];
+
 			switch (cmd_id) {
 			case 0x0001:ext_game_status_interpret(&frame[7]); break;
 			case 0x0002:ext_game_result_interpret(&frame[7]); break;
 			case 0x0003:ext_game_robot_HP_interpret(&frame[7]); break;
+			case 0x0005:ext_ICRA_buff_debuff_zone_status_interpret(&frame[7]);break;
 			case 0x0101:ext_event_data_interpret(&frame[7]); break;
 			case 0x0102:ext_supply_projectile_action_interpret(&frame[7]); break;
-				//			  	case 0x0103:ext_supply_projectile_booking_interpret(&frame[7]);break;
 			case 0x0201:ext_game_robot_status_interpret(&frame[7]); break;
 			case 0x0202:ext_power_heat_data_interpret(&frame[7]); break;
 			case 0x0203:ext_game_robot_pos_interpret(&frame[7]); break;
@@ -1021,426 +905,668 @@ bool frame_interpret(uint8_t* _frame, uint16_t size) {
 			case 0x0207:ext_shoot_data_interpret(&frame[7]); break;
 			case 0x0301:ext_student_interactive_header_data_interpret(&frame[7]); break;
 
-				// case 1: extGameRobotState_interpret(&frame[7]);break;  // 比赛进程信息
-				 //case 2: extRobotHurt_interpret(&frame[7]);break; // 伤害数据
-				 //case 3: extShootData_interpret(&frame[7]);break;  // 实时射击数据
-							 //case 4: extPowerHeatData_interpret(&frame[7]);break;  //实时功率热量数据
-						   //case 8: extGameRobotPos_interpret(&frame[7]);break;  //// 机器人位置和枪口朝向信息
-				 //case 5:StudentPropInfo_interpret(&frame[7]);break;  //赛场信息
+
 			default: break;
 			}
-			// return true;
+
 		}
-		//	else {
-		//		return false;
-		//	}
+
 	}
 	return true;
 }
 
-//void referee_send_client_graphic(ext_id_t target_id, graphic_data_struct_t* graphic_draw) {
+void referee_send_client_graphic(ext_id_t target_id, graphic_data_struct_t* graphic_draw) 
+{
+	static ext_robot_graphic_data_t robot_data;
 
-//	static ext_robot_graphic_data_t robot_data;
+	robot_data.header.sof = REFEREE_FRAME_HEADER_SOF;
+	robot_data.header.seq++;
+	robot_data.header.data_length = sizeof(robot_data) - sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
+	
+	Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
+	
+	robot_data.cmd_id = student_interactive_header;
+	robot_data.data_id = 0x0101;
+	robot_data.sender_id = MY_ROBOT_ID;
+	robot_data.robot_id = target_id;
+	
+	robot_data.graphic_data = *graphic_draw;
+	Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));//帧头CRC校验
 
-//	robot_data.header.sof = REFEREE_FRAME_HEADER_SOF;
-//	robot_data.header.seq++;
-//	robot_data.header.data_length = sizeof(robot_data) - sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
-//	Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
+	memcpy(Personal_Data, (u8*)&robot_data, sizeof(robot_data));
+	usart6_tx_dma_enable(Personal_Data, sizeof(robot_data));
 
-//	robot_data.cmd_id = student_interactive_header;
-//	robot_data.data_id = 0x0101;
-//	robot_data.sender_id = MY_ROBOT_ID;
-//	robot_data.robot_id = target_id;
-//	// memcpy(&robot_data.graphic_data ,(uint8_t*)&graphic_draw, sizeof(robot_data.graphic_data));
-//	robot_data.graphic_data = *graphic_draw;
-//	Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));
-//	//spDMA.mem2mem.copy((uint32_t)robot_data.data, (uint32_t)graphic_draw, size);
-///* Send out data */
-////		return spDMA.controller.start(spDMA_USART6_tx_stream, 
-////        (uint32_t)&robot_data, (uint32_t)USART6->DR, sizeof(robot_data));
-//	memcpy(Personal_Data, (u8*)&robot_data, sizeof(robot_data));
-//	RefereeSend(sizeof(robot_data));
-//}
+}
 
-//void referee_send_client_character(ext_id_t target_id, ext_client_custom_character_t* character_data) {
-
-
-//	static ext_robot_character_data_t robot_data;
-
-//	robot_data.header.sof = REFEREE_FRAME_HEADER_SOF;
-//	robot_data.header.seq++;
-//	robot_data.header.data_length = sizeof(robot_data) - sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
-//	Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
-
-//	robot_data.cmd_id = student_interactive_header;
-//	robot_data.data_id = 0x0110;
-//	robot_data.sender_id = MY_ROBOT_ID;
-//	robot_data.robot_id = target_id;
-//	// memcpy(&robot_data.graphic_data ,(uint8_t*)&graphic_draw, sizeof(robot_data.graphic_data));
-//	robot_data.character_data = *character_data;
-//	Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));
-//	//spDMA.mem2mem.copy((uint32_t)robot_data.data, (uint32_t)graphic_draw, size);
-///* Send out data */
-////		return spDMA.controller.start(spDMA_USART6_tx_stream, 
-////        (uint32_t)&robot_data, (uint32_t)USART6->DR, sizeof(robot_data));
-//	memcpy(Personal_Data, (u8*)&robot_data, sizeof(robot_data));
-//	RefereeSend(sizeof(robot_data));
-//}
-
-//void referee_send_multi_graphic(ext_id_t target_id, ext_client_custom_graphic_seven_t* graphic_draw) {
-
-//	static ext_robot_sev_graphic_data_t robot_data;
-
-//	robot_data.header.sof = REFEREE_FRAME_HEADER_SOF;
-//	robot_data.header.seq++;
-//	robot_data.header.data_length = sizeof(robot_data) - sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
-//	Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
-
-//	robot_data.cmd_id = student_interactive_header;
-//	robot_data.data_id = 0x0104;
-//	robot_data.sender_id = MY_ROBOT_ID;
-//	robot_data.robot_id = target_id;
-//	// memcpy(&robot_data.graphic_data ,(uint8_t*)&graphic_draw, sizeof(robot_data.graphic_data));
-//	robot_data.graphic_data = *graphic_draw;
-//	Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));
-//	//spDMA.mem2mem.copy((uint32_t)robot_data.data, (uint32_t)graphic_draw, size);
-///* Send out data */
-////		return spDMA.controller.start(spDMA_USART6_tx_stream, 
-////        (uint32_t)&robot_data, (uint32_t)USART6->DR, sizeof(robot_data));
-//	memcpy(Personal_Data, (u8*)&robot_data, sizeof(robot_data));
-//	RefereeSend(sizeof(robot_data));
-//}
-
-//static bool first_cap_draw = true;
-
-//void send_cap_graphic(int residue_power)
-//{
-//	graphic_data_struct_t graphic_draw;
-//	//float res = (float)residue_power/1800.0*100.0;
-//	int res = residue_power;
-//	res = res < 0 ? 0 : (res > 100 ? 100 : res);
-//	char* name = "c";
-//	graphic_draw.graphic_tpye = 0;
-
-//	if (first_cap_draw) {
-//		graphic_draw.operate_tpye = 1;
-//		first_cap_draw = false;
-//	}
-//	else {
-//		graphic_draw.operate_tpye = 2;
-//	}
-//	//graphic_draw.operate_tpye = 1;
-//	graphic_draw.layer = 0;
-//	if (res > 80)
-//	{
-//		graphic_draw.color = 2;
-//	}
-//	else if (res > 50)
-//	{
-//		graphic_draw.color = 1;
-//	}
-//	else if (res > 20)
-//	{
-//		graphic_draw.color = 3;
-//	}
-//	else
-//	{
-//		graphic_draw.color = 5;
-//	}
-//	graphic_draw.width = 30;
-//	//graphic_draw.start_angle=10;
-//	//graphic_draw.end_angle=10;
-//	graphic_draw.start_x = 800;
-//	graphic_draw.start_y = 100;
-//	graphic_draw.end_x = graphic_draw.start_x + res + 5;
-//	graphic_draw.end_y = graphic_draw.start_y;
-//	//graphic_draw.radius = 30;
-//	//graphic_draw.text_lenght = strlen(value);
-//	memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
-
-//	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
-//}
-
-//void send_pitch_graphic(int type)
-//{
-//	graphic_data_struct_t graphic_draw;
-//	//float res = (float)residue_power/1800.0*100.0;
-//	int pitchang = (MIDDLE_PITCH - CAN2_206.Current_position) * 360 / 8192.0;
-////	if (frictionState == Friction_ON) {
-//	if(1){
-//		graphic_draw.color = 1;
-//	}
-//	else {
-//		graphic_draw.color = 4;
-//	}
-//	char* name = "a";
-//	/*	graphic_draw.graphic_tpye = 0;
-
-//		if(first_cap_draw){
-//			graphic_draw.operate_tpye = 1;
-//			first_cap_draw = false;
-//		}
-//		else{
-//			graphic_draw.operate_tpye = 2;
-//		}*/
-//	graphic_draw.operate_tpye = type;
-//	graphic_draw.layer = 0;
+void referee_send_client_character(ext_id_t target_id, ext_client_custom_character_t* character_data) {
 
 
-//	graphic_draw.width = 10;
-//	//graphic_draw.start_angle=10;
-//	//graphic_draw.end_angle=10;
-//	graphic_draw.start_x = 1600;
-//	graphic_draw.start_y = 70;
-//	graphic_draw.end_x = graphic_draw.start_x;
-//	graphic_draw.end_y = graphic_draw.start_y + 10;//+pitchang*10;
-//	//graphic_draw.radius = 30;
-//	//graphic_draw.text_lenght = strlen(value);
-//	memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+	static ext_robot_character_data_t robot_data;
 
-//	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
-//}
+	robot_data.header.sof = REFEREE_FRAME_HEADER_SOF;
+	robot_data.header.seq++;
+	robot_data.header.data_length = sizeof(robot_data) - sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
+	Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
 
-//void send_single_icon(char* name, int x, int y, int type, int color)
-//{
-//	graphic_data_struct_t graphic_draw;
-//	//float res = (float)residue_power/1800.0*100.0;
-////	int pitchang=(MIDDLE_PITCH-CAN2_206.Current_position)*360/8192.0;
-//	graphic_draw.color = color;
+	robot_data.cmd_id = student_interactive_header;
+	robot_data.data_id = 0x0110;
+	robot_data.sender_id = MY_ROBOT_ID;
+	robot_data.robot_id = target_id;
+	
+	robot_data.character_data = *character_data;
+	Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));
 
-//	/*	graphic_draw.graphic_tpye = 0;
+	memcpy(Personal_Data, (u8*)&robot_data, sizeof(robot_data));
+	usart6_tx_dma_enable(Personal_Data, sizeof(robot_data));
 
-//		if(first_cap_draw){
-//			graphic_draw.operate_tpye = 1;
-//			first_cap_draw = false;
-//		}
-//		else{
-//			graphic_draw.operate_tpye = 2;
-//		}*/
-//	graphic_draw.operate_tpye = type;
-//	graphic_draw.layer = 0;
+}
 
+void referee_send_multi_graphic(ext_id_t target_id, ext_client_custom_graphic_seven_t* graphic_draw) {
 
-//	graphic_draw.width = 20;
-//	//graphic_draw.start_angle=10;
-//	//graphic_draw.end_angle=10;
-//	graphic_draw.start_x = x;
-//	graphic_draw.start_y = y;
-//	graphic_draw.end_x = graphic_draw.start_x;
-//	graphic_draw.end_y = graphic_draw.start_y + 20;//+pitchang*10;
-//	//graphic_draw.radius = 30;
-//	//graphic_draw.text_lenght = strlen(value);
-//	memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+	static ext_robot_sev_graphic_data_t robot_data;
 
-//	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
-//}
+	robot_data.header.sof = REFEREE_FRAME_HEADER_SOF;
+	robot_data.header.seq++;
+	robot_data.header.data_length = sizeof(robot_data) - sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
+	Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
+	
+	robot_data.cmd_id = student_interactive_header;
+	robot_data.data_id = 0x0104;
+	robot_data.sender_id = MY_ROBOT_ID;
+	robot_data.robot_id = target_id;
+
+	robot_data.graphic_data = *graphic_draw;
+	Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));
+
+	memcpy(Personal_Data, (u8*)&robot_data, sizeof(robot_data));
+	usart6_tx_dma_enable(Personal_Data, sizeof(robot_data));//将定制好的图形数据传输出去
+
+}
 
 
-//static bool first_multi_draw = true;
-//void send_multi_graphic()
-//{
-//	ext_client_custom_graphic_seven_t graphic_draw;
-//	//graph 1
-//	char* name1 = "c";
-//	graphic_draw.graphic_data_struct[0].graphic_tpye = 0;
-//	if (first_multi_draw)
-//	{
-//		static bool first_multi_draw = false;
-//		graphic_draw.graphic_data_struct[0].operate_tpye = 1;
-//		graphic_draw.graphic_data_struct[1].operate_tpye = 1;
-//		graphic_draw.graphic_data_struct[2].operate_tpye = 1;
-//		graphic_draw.graphic_data_struct[3].operate_tpye = 1;
-//		graphic_draw.graphic_data_struct[4].operate_tpye = 1;
-//		graphic_draw.graphic_data_struct[5].operate_tpye = 1;
-//		graphic_draw.graphic_data_struct[6].operate_tpye = 1;
-//	}
 
-//	else
-//	{
-//		graphic_draw.graphic_data_struct[0].operate_tpye = 2;
-//		graphic_draw.graphic_data_struct[1].operate_tpye = 2;
-//		graphic_draw.graphic_data_struct[2].operate_tpye = 2;
-//		graphic_draw.graphic_data_struct[3].operate_tpye = 2;
-//		graphic_draw.graphic_data_struct[4].operate_tpye = 2;
-//		graphic_draw.graphic_data_struct[5].operate_tpye = 2;
-//		graphic_draw.graphic_data_struct[6].operate_tpye = 2;
-//	}
+static bool first_cap_draw = true;
 
-//	graphic_draw.graphic_data_struct[0].layer = 0;
-//	graphic_draw.graphic_data_struct[0].color = 1;
-//	graphic_draw.graphic_data_struct[0].width = 3;
-//	//graphic_draw.graphic_data_struct[0].start_angle=10;
-//	//graphic_draw.graphic_data_struct[0].end_angle=10;
-//	graphic_draw.graphic_data_struct[0].start_x = 960;
-//	graphic_draw.graphic_data_struct[0].start_y = 200;
-//	graphic_draw.graphic_data_struct[0].end_x = 960;
-//	graphic_draw.graphic_data_struct[0].end_y = 540;
-//	//graphic_draw.graphic_data_struct[0].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[0].graphic_name, (uint8_t*)name1, strlen(name1));
-//	//graph 2
-//	char* name2 = "d";
-//	graphic_draw.graphic_data_struct[1].graphic_tpye = 0;
-//	//graphic_draw.graphic_data_struct[1].operate_tpye = 1;
-//	graphic_draw.graphic_data_struct[1].layer = 0;
-//	graphic_draw.graphic_data_struct[1].color = 1;
-//	graphic_draw.graphic_data_struct[1].width = 3;
-//	//graphic_draw.graphic_data_struct[1].start_angle=10;
-//	//graphic_draw.graphic_data_struct[1].end_angle=10;
-//	graphic_draw.graphic_data_struct[1].start_x = 850;
-//	graphic_draw.graphic_data_struct[1].start_y = 540;
-//	graphic_draw.graphic_data_struct[1].end_x = 1070;
-//	graphic_draw.graphic_data_struct[1].end_y = 540;
-//	//graphic_draw.graphic_data_struct[1].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[1].graphic_name, (uint8_t*)name2, strlen(name2));
-//	//graph 3
-//	char* name3 = "e";
-//	graphic_draw.graphic_data_struct[2].graphic_tpye = 0;
-//	//graphic_draw.graphic_data_struct[2].operate_tpye = 1;
-//	graphic_draw.graphic_data_struct[2].layer = 0;
-//	graphic_draw.graphic_data_struct[2].color = 1;
-//	graphic_draw.graphic_data_struct[2].width = 3;
-//	//graphic_draw.graphic_data_struct[2].start_angle=10;
-//	//graphic_draw.graphic_data_struct[2].end_angle=10;
-//	graphic_draw.graphic_data_struct[2].start_x = 860;
-//	graphic_draw.graphic_data_struct[2].start_y = 520;
-//	graphic_draw.graphic_data_struct[2].end_x = 1060;
-//	graphic_draw.graphic_data_struct[2].end_y = 520;
-//	//graphic_draw.graphic_data_struct[2].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[2].graphic_name, (uint8_t*)name3, strlen(name3));
-//	//graph 4
-//	char* name4 = "f";
-//	graphic_draw.graphic_data_struct[3].graphic_tpye = 0;
-//	//graphic_draw.graphic_data_struct[3].operate_tpye = 1;
-//	graphic_draw.graphic_data_struct[3].layer = 0;
-//	graphic_draw.graphic_data_struct[3].color = 1;
-//	graphic_draw.graphic_data_struct[3].width = 3;
-//	//graphic_draw.graphic_data_struct[3].start_angle=10;
-//	//graphic_draw.graphic_data_struct[3].end_angle=10;
-//	graphic_draw.graphic_data_struct[3].start_x = 890;
-//	graphic_draw.graphic_data_struct[3].start_y = 480;
-//	graphic_draw.graphic_data_struct[3].end_x = 1030;
-//	graphic_draw.graphic_data_struct[3].end_y = 480;
-//	//graphic_draw.graphic_data_struct[3].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[3].graphic_name, (uint8_t*)name4, strlen(name4));
-//	//graph 5
-//	char* name5 = "g";
-//	graphic_draw.graphic_data_struct[4].graphic_tpye = 0;
-//	//graphic_draw.graphic_data_struct[4].operate_tpye = 1;
-//	graphic_draw.graphic_data_struct[4].layer = 0;
-//	graphic_draw.graphic_data_struct[4].color = 1;
-//	graphic_draw.graphic_data_struct[4].width = 3;
-//	//graphic_draw.graphic_data_struct[4].start_angle=10;
-//	//graphic_draw.graphic_data_struct[4].end_angle=10;
-//	graphic_draw.graphic_data_struct[4].start_x = 920;
-//	graphic_draw.graphic_data_struct[4].start_y = 410;
-//	graphic_draw.graphic_data_struct[4].end_x = 1000;
-//	graphic_draw.graphic_data_struct[4].end_y = 410;
-//	//graphic_draw.graphic_data_struct[4].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[4].graphic_name, (uint8_t*)name5, strlen(name5));
-//	//graph 6
-//	char* name6 = "h";
-//	graphic_draw.graphic_data_struct[5].graphic_tpye = 0;
-//	//graphic_draw.graphic_data_struct[5].operate_tpye = 1;
-//	graphic_draw.graphic_data_struct[5].layer = 0;
-//	graphic_draw.graphic_data_struct[5].color = 1;
-//	graphic_draw.graphic_data_struct[5].width = 3;
-//	//graphic_draw.graphic_data_struct[5].start_angle=10;
-//	//graphic_draw.graphic_data_struct[5].end_angle=10;
-//	graphic_draw.graphic_data_struct[5].start_x = 940;
-//	graphic_draw.graphic_data_struct[5].start_y = 300;
-//	graphic_draw.graphic_data_struct[5].end_x = 980;
-//	graphic_draw.graphic_data_struct[5].end_y = 300;
-//	//graphic_draw.graphic_data_struct[5].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[5].graphic_name, (uint8_t*)name6, strlen(name6));
-//	//graph 7
-//	char* name7 = "i";
-//	graphic_draw.graphic_data_struct[6].graphic_tpye = 0;
-//	//graphic_draw.graphic_data_struct[6].operate_tpye = 1;
-//	graphic_draw.graphic_data_struct[6].layer = 0;
-//	graphic_draw.graphic_data_struct[6].color = 1;
-//	graphic_draw.graphic_data_struct[6].width = 3;
-//	//graphic_draw.graphic_data_struct[6].start_angle=10;
-//	//graphic_draw.graphic_data_struct[6].end_angle=10;
-//	graphic_draw.graphic_data_struct[6].start_x = 960;
-//	graphic_draw.graphic_data_struct[6].start_y = 541;
-//	graphic_draw.graphic_data_struct[6].end_x = 960;
-//	graphic_draw.graphic_data_struct[6].end_y = 550;
-//	//graphic_draw.graphic_data_struct[6].radius = 30;
-//	memcpy(graphic_draw.graphic_data_struct[6].graphic_name, (uint8_t*)name7, strlen(name7));
+void send_cap_graphic(int residue_power)
+{
+	graphic_data_struct_t graphic_draw;
+	//float res = (float)residue_power/1800.0*100.0;
+	int res = residue_power;
+	res = res < 0 ? 0 : (res > 100 ? 100 : res);//res的值控制在0~100间
+	char* name = "c";
+	graphic_draw.graphic_tpye = 0;//直线
 
-//	referee_send_multi_graphic(MY_CLIENT_ID, &graphic_draw);
-//}
+	if (first_cap_draw) {
+		graphic_draw.operate_tpye = 1;
+		first_cap_draw = false;
+	}
+	else {
+		graphic_draw.operate_tpye = 2;
+	}
+
+	graphic_draw.layer = 0;
+	if (res > 80)
+	{
+		graphic_draw.color = 2;//绿色
+	}
+	else if (res > 50)
+	{
+		graphic_draw.color = 1;//黄色
+	}
+	else if (res > 20)
+	{
+		graphic_draw.color = 3;//橙色
+	}
+	else
+	{
+		graphic_draw.color = 5;//粉色
+	}
+	graphic_draw.width = 30;
+	graphic_draw.start_x = 800;
+	graphic_draw.start_y = 100;
+	graphic_draw.end_x = graphic_draw.start_x + res + 5;
+	graphic_draw.end_y = graphic_draw.start_y;
+	memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
 
 
-//void Send_Middle_rectangle(int level, int color, int x_length, int y_length)
-//{
-//	graphic_data_struct_t graphic_draw2;
-//	char name_temp = (char)(level + 30);
-//	char* name = &name_temp;
-//	graphic_draw2.operate_tpye = 1;
-//	graphic_draw2.graphic_tpye = 2;
-//	graphic_draw2.layer = level;
-//	graphic_draw2.color = color;
-//	graphic_draw2.width = 2;
-//	graphic_draw2.start_x = (int)(960 - x_length / 2.0f);
-//	graphic_draw2.start_y = (int)(540 - y_length / 2.0f);
-//	graphic_draw2.end_x = (int)(960 + x_length / 2.0f);
-//	graphic_draw2.end_y = (int)(540 + y_length / 2.0f);
-//	memcpy(graphic_draw2.graphic_name, (uint8_t*)name, strlen(name));
-//	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw2);
-//}
+void send_pitch_graphic(int type)
+{
+	graphic_data_struct_t graphic_draw;
+	int pitchang = (MIDDLE_PITCH - CAN2_206.Current_position) * 360 / 8192.0;
+	if(1)
+	{
+		graphic_draw.color = 1;
+	}
+	else 
+	{
+		graphic_draw.color = 4;
+	}
+	char* name = "a";
+	graphic_draw.graphic_tpye = 0;
 
+	if(first_cap_draw){
+		graphic_draw.operate_tpye = 1;
+		first_cap_draw = false;
+	}
+	else{
+		graphic_draw.operate_tpye = 2;
+	}
+	graphic_draw.operate_tpye = type;
+	graphic_draw.layer = 0;
+
+
+	graphic_draw.width = 10;
+	graphic_draw.start_x = 1600;
+	graphic_draw.start_y = 70;
+	graphic_draw.end_x = graphic_draw.start_x;
+	graphic_draw.end_y = graphic_draw.start_y + 10;//+pitchang*10;
+	memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+void send_capvol_graphic(char name[3],int startx,int endx,int color, int type)
+{
+	graphic_data_struct_t graphic_draw;
+	graphic_draw.graphic_name[0] = name[0];
+	graphic_draw.graphic_name[0] = name[1];
+	graphic_draw.graphic_name[0] = name[2];
+	graphic_draw.operate_tpye = type;
+	graphic_draw.color = color;
+	graphic_draw.graphic_tpye = 0;
+	graphic_draw.layer = 0;
+
+	graphic_draw.width = 37; //线条宽度
+	graphic_draw.start_x = startx;
+	graphic_draw.start_y = 80;
+	
+	graphic_draw.end_x = endx;
+	graphic_draw.end_y = 80;
+	
+	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+
+
+void send_rub_graphic(char graphname[3], int x, int y, int color, int type)
+{
+	
+	graphic_data_struct_t graphic_draw;
+	graphic_draw.graphic_name[0] = graphname[0];
+	graphic_draw.graphic_name[0] = graphname[1];
+	graphic_draw.graphic_name[0] = graphname[2];
+	
+	graphic_draw.operate_tpye = type;
+	
+	graphic_draw.color = color;
+	graphic_draw.graphic_tpye = 2;
+	
+	graphic_draw.layer = 0;
+	graphic_draw.width = 20; //线条宽度
+	
+	graphic_draw.start_x = x;
+	graphic_draw.start_y = y;
+	
+	graphic_draw.radius = 20;
+	
+	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+void send_frame1_graphic(char graphname[3], int x, int y)
+{
+	
+	graphic_data_struct_t graphic_draw;
+	
+	switch(ext_game_robot_status.robot_id){
+				case robotid_red_hero:{
+						MY_CLIENT_ID = clientid_red_hero;
+						MY_ROBOT_ID = robotid_red_hero;	
+					  break;
+				}
+				case robotid_red_infantry_1:{
+						MY_CLIENT_ID = clientid_red_infantry_1;
+						MY_ROBOT_ID = robotid_red_infantry_1;	
+					  break;
+				}
+				case robotid_red_infantry_2:{
+						MY_CLIENT_ID = clientid_red_infantry_2;
+						MY_ROBOT_ID = robotid_red_infantry_2;	
+					  break;					
+				}
+				case robotid_red_infantry_3:{
+						MY_CLIENT_ID = clientid_red_infantry_3;
+						MY_ROBOT_ID = robotid_red_infantry_3;
+					  break;					
+				}
+			
+				case robotid_blue_hero:{
+						MY_CLIENT_ID = clientid_blue_hero;
+						MY_ROBOT_ID = robotid_blue_hero;	
+					  break;
+				}
+				case robotid_blue_infantry_1:{
+						MY_CLIENT_ID = clientid_blue_infantry_1;
+						MY_ROBOT_ID = robotid_blue_infantry_1;	
+					  break;
+				}
+				case robotid_blue_infantry_2:{
+						MY_CLIENT_ID = clientid_blue_infantry_2;
+						MY_ROBOT_ID = robotid_blue_infantry_2;
+					  break;					
+				}
+				case robotid_blue_infantry_3:{
+						MY_CLIENT_ID = clientid_blue_infantry_3;
+						MY_ROBOT_ID = robotid_blue_infantry_3;
+					  break;					
+				}
+			}
+	
+	graphic_draw.graphic_name[0] = graphname[0];
+	graphic_draw.graphic_name[0] = graphname[1];
+	graphic_draw.graphic_name[0] = graphname[2];
+
+	graphic_draw.color = 8;
+	graphic_draw.graphic_tpye = 2;
+	graphic_draw.operate_tpye = 1;
+
+	graphic_draw.layer = 0;
+	graphic_draw.width = 3; //线条宽度
+	
+	graphic_draw.start_x = x;
+	graphic_draw.start_y = y;
+	
+	graphic_draw.radius = 33;
+	
+	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+void send_frame2_graphic(char graphname[3], int startx, int starty, int endx, int endy)
+{
+	
+	graphic_data_struct_t graphic_draw;
+	
+	
+	graphic_draw.graphic_name[0] = graphname[0];
+	graphic_draw.graphic_name[0] = graphname[1];
+	graphic_draw.graphic_name[0] = graphname[2];
+
+	graphic_draw.color = 8;
+	graphic_draw.graphic_tpye = 1;
+	graphic_draw.operate_tpye = 1;
+
+	graphic_draw.layer = 0;
+	graphic_draw.width = 3; //线条宽度
+	
+	graphic_draw.start_x = startx;
+	graphic_draw.start_y = starty;
+	graphic_draw.end_x = endx;
+	graphic_draw.end_y = endy;
+	
+	
+	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+void send_text_graphic(char GraphName[3])
+{
+	//char* name = "t";
+	graphic_data_struct_t graphic_draw;
+	graphic_draw.graphic_name[0] =GraphName[0];
+	graphic_draw.graphic_name[1] =GraphName[1];
+	graphic_draw.graphic_name[2] =GraphName[2];
+	
+	graphic_draw.operate_tpye = 1;
+	
+	graphic_draw.graphic_tpye = 0;
+	
+	graphic_draw.layer = 0;
+	graphic_draw.color = 2;
+	//graphic_draw.start_angle=0;
+	//graphic_draw.end_angle = 0;
+	graphic_draw.width = 20; //线条宽度
+	graphic_draw.start_x = 440;
+	graphic_draw.start_y = 640;
+	//graphic_draw.radius = 0;
+	graphic_draw.end_x = 880;
+	graphic_draw.end_y = 640;
+	
+	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+
+
+void send_spinning_graphic(char name[3], int x, int y, int color, int type)
+{
+	
+	graphic_data_struct_t graphic_draw;
+	
+	graphic_draw.graphic_name[0] =name[0];
+	graphic_draw.graphic_name[1] =name[1];
+	graphic_draw.graphic_name[2] =name[2];
+	
+	
+	graphic_draw.operate_tpye = type;
+	
+	graphic_draw.color = color;
+	graphic_draw.graphic_tpye = 2;
+	
+	graphic_draw.layer = 0;
+	graphic_draw.width = 20; //线条宽度
+	
+	graphic_draw.start_x = x;
+	graphic_draw.start_y = y;
+	
+	graphic_draw.radius = 20;
+	
+	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+void send_single_icon(char* name, int x, int y, int type, int color)
+{ //参数依次为：name：图形名称，作为客户端索引 
+	//x,y:绘图起点坐标
+	//type :图形类型，如直线、矩形、字符等
+	//color:图形颜色
+	graphic_data_struct_t graphic_draw;
+	//float res = (float)residue_power/1800.0*100.0;
+//	int pitchang=(MIDDLE_PITCH-CAN2_206.Current_position)*360/8192.0;
+	graphic_draw.color = color;
+
+	/*	graphic_draw.graphic_tpye = 0;
+
+		if(first_cap_draw){
+			graphic_draw.operate_tpye = 1;
+			first_cap_draw = false;
+		}
+		else{
+			graphic_draw.operate_tpye = 2;
+		}*/
+	graphic_draw.operate_tpye = type;
+	graphic_draw.layer = 0;
+
+
+	graphic_draw.width = 20; //线条宽度
+	//graphic_draw.start_angle=10;
+	//graphic_draw.end_angle=10;
+	graphic_draw.start_x = x;
+	graphic_draw.start_y = y;
+	graphic_draw.end_x = graphic_draw.start_x;
+	graphic_draw.end_y = graphic_draw.start_y + 20;//+pitchang*10;
+	//graphic_draw.radius = 30;
+	//graphic_draw.text_lenght = strlen(value);
+	memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
+
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+
+static bool first_multi_draw = true;
+void send_multi_graphic()//向客户端发送七个图形的数据。每个图形包含起点终点、操作类型、颜色、线宽等属性。
+{
+	/*  
+          	|
+		————|————
+	    ———|———
+	      ——|——
+	        —|—
+	          |
+	          |
+	          |
+	          |
+	*/
+	ext_client_custom_graphic_seven_t graphic_draw;
+	switch(ext_game_robot_status.robot_id){
+				case robotid_red_hero:{
+						MY_CLIENT_ID = clientid_red_hero;
+						MY_ROBOT_ID = robotid_red_hero;	
+					  break;
+				}
+				case robotid_red_infantry_1:{
+						MY_CLIENT_ID = clientid_red_infantry_1;
+						MY_ROBOT_ID = robotid_red_infantry_1;	
+					  break;
+				}
+				case robotid_red_infantry_2:{
+						MY_CLIENT_ID = clientid_red_infantry_2;
+						MY_ROBOT_ID = robotid_red_infantry_2;	
+					  break;					
+				}
+				case robotid_red_infantry_3:{
+						MY_CLIENT_ID = clientid_red_infantry_3;
+						MY_ROBOT_ID = robotid_red_infantry_3;
+					  break;					
+				}
+			
+				case robotid_blue_hero:{
+						MY_CLIENT_ID = clientid_blue_hero;
+						MY_ROBOT_ID = robotid_blue_hero;	
+					  break;
+				}
+				case robotid_blue_infantry_1:{
+						MY_CLIENT_ID = clientid_blue_infantry_1;
+						MY_ROBOT_ID = robotid_blue_infantry_1;	
+					  break;
+				}
+				case robotid_blue_infantry_2:{
+						MY_CLIENT_ID = clientid_blue_infantry_2;
+						MY_ROBOT_ID = robotid_blue_infantry_2;
+					  break;					
+				}
+				case robotid_blue_infantry_3:{
+						MY_CLIENT_ID = clientid_blue_infantry_3;
+						MY_ROBOT_ID = robotid_blue_infantry_3;
+					  break;					
+				}
+			}
+	
+	//graph 1：一条线宽为3的黄色直线。起点为（960，200）终点为（960，540）
+	
+	//graphic_draw.graphic_data_struct[0].graphic_tpye = 0;
+	if (first_multi_draw)
+	{//第一次画则设置模式为新增
+		first_multi_draw = false;
+		graphic_draw.graphic_data_struct[0].operate_tpye = 1;
+		graphic_draw.graphic_data_struct[1].operate_tpye = 1;
+		graphic_draw.graphic_data_struct[2].operate_tpye = 1;
+		graphic_draw.graphic_data_struct[3].operate_tpye = 1;
+		graphic_draw.graphic_data_struct[4].operate_tpye = 1;
+		graphic_draw.graphic_data_struct[5].operate_tpye = 1;
+		graphic_draw.graphic_data_struct[6].operate_tpye = 1;
+	}
+
+	else
+	{//不是第一次画则设置模式为修改
+		graphic_draw.graphic_data_struct[0].operate_tpye = 2;
+		graphic_draw.graphic_data_struct[1].operate_tpye = 2;
+		graphic_draw.graphic_data_struct[2].operate_tpye = 2;
+		graphic_draw.graphic_data_struct[3].operate_tpye = 2;
+		graphic_draw.graphic_data_struct[4].operate_tpye = 2;
+		graphic_draw.graphic_data_struct[5].operate_tpye = 2;
+		graphic_draw.graphic_data_struct[6].operate_tpye = 2;
+	}
+	char name1[3] = "201";
+	graphic_draw.graphic_data_struct[0].graphic_name[0] = name1[0];
+	graphic_draw.graphic_data_struct[0].graphic_name[1] = name1[1];
+	graphic_draw.graphic_data_struct[0].graphic_name[2] = name1[2];
+	graphic_draw.graphic_data_struct[0].graphic_tpye = 0;
+	graphic_draw.graphic_data_struct[0].layer = 0;
+	graphic_draw.graphic_data_struct[0].color = 1;
+	graphic_draw.graphic_data_struct[0].width = 3;
+	//graphic_draw.graphic_data_struct[0].start_angle=10;
+	//graphic_draw.graphic_data_struct[0].end_angle=10;
+	graphic_draw.graphic_data_struct[0].start_x = 960;
+	graphic_draw.graphic_data_struct[0].start_y = 200;
+	graphic_draw.graphic_data_struct[0].end_x = 960;
+	graphic_draw.graphic_data_struct[0].end_y = 540;
+	//graphic_draw.graphic_data_struct[0].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[0].graphic_name, (uint8_t*)name1, strlen(name1));
+	
+	
+	//graph 2：一条线宽为3的黄色直线，起点为（850，540），终点为（1070，540）
+	char name2[3] = "202";
+	graphic_draw.graphic_data_struct[1].graphic_name[0] = name2[0];
+	graphic_draw.graphic_data_struct[1].graphic_name[1] = name2[1];
+	graphic_draw.graphic_data_struct[1].graphic_name[2] = name2[2];
+	graphic_draw.graphic_data_struct[1].graphic_tpye = 0;
+	//graphic_draw.graphic_data_struct[1].operate_tpye = 1;
+	graphic_draw.graphic_data_struct[1].layer = 0;
+	graphic_draw.graphic_data_struct[1].color = 1;
+	graphic_draw.graphic_data_struct[1].width = 3;
+	//graphic_draw.graphic_data_struct[1].start_angle=10;
+	//graphic_draw.graphic_data_struct[1].end_angle=10;
+	graphic_draw.graphic_data_struct[1].start_x = 850;
+	graphic_draw.graphic_data_struct[1].start_y = 540;
+	graphic_draw.graphic_data_struct[1].end_x = 1070;
+	graphic_draw.graphic_data_struct[1].end_y = 540;
+	//graphic_draw.graphic_data_struct[1].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[1].graphic_name, (uint8_t*)name2, strlen(name2));
+	
+	
+	//graph 3：也是线宽为3的黄色直线，起点为（860，520），终点为（1060，520）
+	char name3[3] = "203";
+	graphic_draw.graphic_data_struct[2].graphic_name[0] = name3[0];
+	graphic_draw.graphic_data_struct[2].graphic_name[1] = name3[1];
+	graphic_draw.graphic_data_struct[2].graphic_name[2] = name3[2];
+	graphic_draw.graphic_data_struct[2].graphic_tpye = 0;
+	//graphic_draw.graphic_data_struct[2].operate_tpye = 1;
+	graphic_draw.graphic_data_struct[2].layer = 0;
+	graphic_draw.graphic_data_struct[2].color = 1;
+	graphic_draw.graphic_data_struct[2].width = 3;
+	//graphic_draw.graphic_data_struct[2].start_angle=10;
+	//graphic_draw.graphic_data_struct[2].end_angle=10;
+	graphic_draw.graphic_data_struct[2].start_x = 860;
+	graphic_draw.graphic_data_struct[2].start_y = 520;
+	graphic_draw.graphic_data_struct[2].end_x = 1060;
+	graphic_draw.graphic_data_struct[2].end_y = 520;
+	//graphic_draw.graphic_data_struct[2].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[2].graphic_name, (uint8_t*)name3, strlen(name3));
+	
+	
+	//graph 4
+	char name4[3] = "204";
+	graphic_draw.graphic_data_struct[3].graphic_name[0] = name4[0];
+	graphic_draw.graphic_data_struct[3].graphic_name[1] = name4[1];
+	graphic_draw.graphic_data_struct[3].graphic_name[2] = name4[2];
+	graphic_draw.graphic_data_struct[3].graphic_tpye = 0;
+	//graphic_draw.graphic_data_struct[3].operate_tpye = 1;
+	graphic_draw.graphic_data_struct[3].layer = 0;
+	graphic_draw.graphic_data_struct[3].color = 1;
+	graphic_draw.graphic_data_struct[3].width = 3;
+	//graphic_draw.graphic_data_struct[3].start_angle=10;
+	//graphic_draw.graphic_data_struct[3].end_angle=10;
+	graphic_draw.graphic_data_struct[3].start_x = 890;
+	graphic_draw.graphic_data_struct[3].start_y = 480;
+	graphic_draw.graphic_data_struct[3].end_x = 1030;
+	graphic_draw.graphic_data_struct[3].end_y = 480;
+	//graphic_draw.graphic_data_struct[3].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[3].graphic_name, (uint8_t*)name4, strlen(name4));
+	//graph 5
+	char name5[3] = "205";
+	graphic_draw.graphic_data_struct[4].graphic_name[0] = name5[0];
+	graphic_draw.graphic_data_struct[4].graphic_name[1] = name5[1];
+	graphic_draw.graphic_data_struct[4].graphic_name[2] = name5[2];
+	graphic_draw.graphic_data_struct[4].graphic_tpye = 0;
+	//graphic_draw.graphic_data_struct[4].operate_tpye = 1;
+	graphic_draw.graphic_data_struct[4].layer = 0;
+	graphic_draw.graphic_data_struct[4].color = 1;
+	graphic_draw.graphic_data_struct[4].width = 3;
+	//graphic_draw.graphic_data_struct[4].start_angle=10;
+	//graphic_draw.graphic_data_struct[4].end_angle=10;
+	graphic_draw.graphic_data_struct[4].start_x = 920;
+	graphic_draw.graphic_data_struct[4].start_y = 410;
+	graphic_draw.graphic_data_struct[4].end_x = 1000;
+	graphic_draw.graphic_data_struct[4].end_y = 410;
+	//graphic_draw.graphic_data_struct[4].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[4].graphic_name, (uint8_t*)name5, strlen(name5));
+	//graph 6
+	char name6[3] = "206";
+	graphic_draw.graphic_data_struct[5].graphic_name[0] = name6[0];
+	graphic_draw.graphic_data_struct[5].graphic_name[1] = name6[1];
+	graphic_draw.graphic_data_struct[5].graphic_name[2] = name6[2];
+	graphic_draw.graphic_data_struct[5].graphic_tpye = 0;
+	//graphic_draw.graphic_data_struct[5].operate_tpye = 1;
+	graphic_draw.graphic_data_struct[5].layer = 0;
+	graphic_draw.graphic_data_struct[5].color = 1;
+	graphic_draw.graphic_data_struct[5].width = 3;
+	//graphic_draw.graphic_data_struct[5].start_angle=10;
+	//graphic_draw.graphic_data_struct[5].end_angle=10;
+	graphic_draw.graphic_data_struct[5].start_x = 940;
+	graphic_draw.graphic_data_struct[5].start_y = 300;
+	graphic_draw.graphic_data_struct[5].end_x = 980;
+	graphic_draw.graphic_data_struct[5].end_y = 300;
+	//graphic_draw.graphic_data_struct[5].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[5].graphic_name, (uint8_t*)name6, strlen(name6));
+	//graph 7
+	char name7[3] = "207";
+	graphic_draw.graphic_data_struct[6].graphic_name[0] = name7[0];
+	graphic_draw.graphic_data_struct[6].graphic_name[1] = name7[1];
+	graphic_draw.graphic_data_struct[6].graphic_name[2] = name7[2];
+	graphic_draw.graphic_data_struct[6].graphic_tpye = 0;
+	//graphic_draw.graphic_data_struct[6].operate_tpye = 1;
+	graphic_draw.graphic_data_struct[6].layer = 0;
+	graphic_draw.graphic_data_struct[6].color = 1;
+	graphic_draw.graphic_data_struct[6].width = 3;
+	//graphic_draw.graphic_data_struct[6].start_angle=10;
+	//graphic_draw.graphic_data_struct[6].end_angle=10;
+	graphic_draw.graphic_data_struct[6].start_x = 960;
+	graphic_draw.graphic_data_struct[6].start_y = 541;
+	graphic_draw.graphic_data_struct[6].end_x = 960;
+	graphic_draw.graphic_data_struct[6].end_y = 550;
+	//graphic_draw.graphic_data_struct[6].radius = 30;
+	//memcpy(graphic_draw.graphic_data_struct[6].graphic_name, (uint8_t*)name7, strlen(name7));
+
+	referee_send_multi_graphic(MY_CLIENT_ID, &graphic_draw);
+}
+
+void Send_Middle_rectangle(int level, int color, int x_length, int y_length)
+{
+	graphic_data_struct_t graphic_draw2;
+	char name_temp = (char)(level + 30);
+	char* name = &name_temp;
+	graphic_draw2.operate_tpye = 1;
+	graphic_draw2.graphic_tpye = 2;
+	graphic_draw2.layer = level;
+	graphic_draw2.color = color;
+	graphic_draw2.width = 2;
+	graphic_draw2.start_x = (int)(960 - x_length / 2.0f);
+	graphic_draw2.start_y = (int)(540 - y_length / 2.0f);
+	graphic_draw2.end_x = (int)(960 + x_length / 2.0f);
+	graphic_draw2.end_y = (int)(540 + y_length / 2.0f);
+	memcpy(graphic_draw2.graphic_name, (uint8_t*)name, strlen(name));
+	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw2);
+}
+
+//declared but never used
 //static bool first_string_draw = true;
-//void send_string(char* str, char* name, int x, int y, int upd, int colour)
-//{
-//	int len = strlen(str) + 1;
-//	ext_client_custom_character_t character_data;
-//	character_data.graphic_data_struct.graphic_tpye = 7;//string
-///*	if(first_string_draw)
-//	{
-//		character_data.graphic_data_struct.operate_tpye = 1;//add
-//		first_string_draw=false;
-//	}
+ void  send_string(char* str, char* name, int x, int y, int upd, int colour)
+{
+	int len = strlen(str) + 1;
+	ext_client_custom_character_t character_data;
+	character_data.graphic_data_struct.graphic_tpye = 7;//string
 
-//	else*/
-//	character_data.graphic_data_struct.operate_tpye = upd;//modify
+	character_data.graphic_data_struct.operate_tpye = upd;//modify
 
-//	character_data.graphic_data_struct.layer = 0;
+	character_data.graphic_data_struct.layer = 0;
 
-//	character_data.graphic_data_struct.color = colour;//green
+	character_data.graphic_data_struct.color = colour;//green
 
-//	character_data.graphic_data_struct.width = 2;
-//	character_data.graphic_data_struct.start_angle = 10;//size
-//	character_data.graphic_data_struct.end_angle = len;//length
-//	character_data.graphic_data_struct.start_x = x;
-//	character_data.graphic_data_struct.start_y = y;
+	character_data.graphic_data_struct.width = 2;
+	character_data.graphic_data_struct.start_angle = 10;//size
+	character_data.graphic_data_struct.end_angle = len;//length
+	character_data.graphic_data_struct.start_x = x;
+	character_data.graphic_data_struct.start_y = y;
 
-//	memcpy(character_data.data, (uint8_t*)str, len);
-//	memcpy(character_data.graphic_data_struct.graphic_name, (uint8_t*)name, strlen(name));
+	memcpy(character_data.data, (uint8_t*)str, len);
+	memcpy(character_data.graphic_data_struct.graphic_name, (uint8_t*)name, strlen(name));
 
-//	referee_send_client_character(MY_CLIENT_ID, &character_data);
-//}
+	referee_send_client_character(MY_CLIENT_ID, &character_data);
+}
 
-
-//void Send_SOS(void)
-//{
-//	graphic_data_struct_t graphic_draw;
-//	char* name = "s";
-//	char* value = "SOS";
-//	graphic_draw.operate_tpye = 1;
-//	graphic_draw.graphic_tpye = 0;
-//	graphic_draw.layer = 0;
-//	graphic_draw.color = 5;
-//	graphic_draw.width = 5;
-//	graphic_draw.start_angle = 0;
-//	graphic_draw.end_angle = 0;
-//	graphic_draw.start_x = 300;
-//	graphic_draw.start_y = 300;
-//	graphic_draw.end_x = 600;
-//	graphic_draw.end_y = 600;
-//	graphic_draw.radius = 70;
-//	//graphic_draw.text_lenght = strlen(value);
-//	//memcpy(graphic_draw.graphic_name, (uint8_t*)name, strlen(name));
-//	//memcpy(graphic_draw.text, (uint8_t*)value, strlen(value));
-//	referee_send_client_graphic(MY_CLIENT_ID, &graphic_draw);
-//}

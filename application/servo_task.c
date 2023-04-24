@@ -20,23 +20,41 @@
 #include "cmsis_os.h"
 #include "bsp_servo_pwm.h"
 #include "remote_control.h"
+#include "tim.h"
 
-#define SERVO_MIN_PWM   500
-#define SERVO_MAX_PWM   2500
+gimbal_servo_t gimbal_servo;
 
-#define COVER_OPEN_PWM 500
-#define COVER_CLOSE_PWM 2000
-
-#define SERVO_COVER_KEY  KEY_PRESSED_OFFSET_R
+gimbal_servo_t *get_gimbal_servo_t(void)
+{
+	return &gimbal_servo;
+}
 
 const RC_ctrl_t *servo_rc;
-covermoni cover;
-
 /**
   * @brief          servo_task
   * @param[in]      pvParameters: NULL
   * @retval         none
   */
+  
+void ammo_lip_invert(gimbal_servo_t *servo)
+{
+	if(servo->ammo_lip_state == LIP_OPEN_STATE)
+	{
+		servo->ammo_lip_angle = LIP_CLOSED_ECD;
+		servo->ammo_lip_state = LIP_CLOSED_STATE;
+		__HAL_TIM_SetCompare(LIP_TIM, LIP_TCH, LIP_CLOSED_ECD);
+		HAL_Delay(300);
+	}		
+	else
+	{
+		servo->ammo_lip_angle = LIP_OPEN_ECD;
+		servo->ammo_lip_state = LIP_OPEN_STATE;
+		__HAL_TIM_SetCompare(LIP_TIM, LIP_TCH, LIP_OPEN_ECD);
+		HAL_Delay(300);
+	}
+  
+	
+}
 /**
   * @brief          ¶æ»úÈÎÎñ
   * @param[in]      pvParameters: NULL
@@ -44,26 +62,25 @@ covermoni cover;
   */
 void servo_task(void const * argument)
 {
-    servo_rc = get_remote_control_point();
-
-    while(1)
+    //servo_rc = get_remote_control_point();
+	
+    HAL_TIM_Base_Start(LIP_TIM);
+    HAL_TIM_PWM_Start(LIP_TIM, LIP_TCH);
+	
+	servo_rc = get_remote_control_point();
+	
+	gimbal_servo.ammo_lip_state = LIP_OPEN_STATE;
+	gimbal_servo.ammo_lip_angle = LIP_OPEN_ECD;
+	__HAL_TIM_SetCompare(LIP_TIM, LIP_TCH, LIP_OPEN_ECD);
+	HAL_Delay(300);
+	
+       while(1)
     {
-//        //if((servo_rc->key.v & KEY_PRESSED_OFFSET_SHIFT) == KEY_PRESSED_OFFSET_SHIFT){
-//				if(switch_is_mid(servo_rc->rc.s[0])){
-//					if(cover == cover_off){
-//						cover = cover_on;
-//						servo_pwm_set(COVER_OPEN_PWM,3);
-//						break;
-//					}
-//					else if(cover == cover_on){
-//						cover = cover_off;
-//						servo_pwm_set(COVER_CLOSE_PWM,3);
-//						break;
-//					}
-//				}
-//				else{
-//					break;
-//				}
+		if((servo_rc->key.v & KEY_PRESSED_OFFSET_CTRL) == KEY_PRESSED_OFFSET_CTRL)
+		{
+			ammo_lip_invert(&gimbal_servo);
+		}
+
         osDelay(10);
     }
 }

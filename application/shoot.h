@@ -24,19 +24,12 @@
 #include "remote_control.h"
 #include "user_lib.h"
 
-//#define INFANTRY_3
 
 //射击发射开关通道数据
 #define SHOOT_RC_MODE_CHANNEL       1
 //云台模式使用的开关通道
-
 #define SHOOT_CONTROL_TIME          GIMBAL_CONTROL_TIME
-
-#define SHOOT_FRIC_PWM_ADD_VALUE    100.0f
-
-////射击摩擦轮激光打开 关闭
-//#define SHOOT_ON_KEYBOARD           KEY_PRESSED_OFFSET_Q
-//#define SHOOT_OFF_KEYBOARD          KEY_PRESSED_OFFSET_E
+//#define SHOOT_FRIC_PWM_ADD_VALUE    100.0f
 
 //射击完成后 子弹弹出去后，判断时间，以防误触发
 #define SHOOT_DONE_KEY_OFF_TIME     15
@@ -46,6 +39,14 @@
 #define RC_S_LONG_TIME              2000
 //摩擦轮高速 加速 时间
 #define UP_ADD_TIME                 80
+//摩擦轮转速比例系数
+//#ifdef INFANTRY_4
+#define FRIC_SEN     				1.0f
+#define SPEED_SET					4600
+//#endif
+//#ifdef INFANTRY_3
+//#define FRIC_SEN     				1.0f
+//#endif
 //电机反馈码盘值范围
 #define HALF_ECD_RANGE              4096
 #define ECD_RANGE                   8191
@@ -58,9 +59,9 @@
 #define CONTINUE_TRIGGER_SPEED      15.0f
 #define READY_TRIGGER_SPEED         5.0f
 
-#define KEY_OFF_JUGUE_TIME          500
-#define SWITCH_TRIGGER_ON           0
-#define SWITCH_TRIGGER_OFF          1
+//#define KEY_OFF_JUGUE_TIME          500
+//#define SWITCH_TRIGGER_ON           0
+//#define SWITCH_TRIGGER_OFF          1
 
 //卡单时间 以及反转时间
 #define BLOCK_TRIGGER_SPEED         1.0f
@@ -68,9 +69,9 @@
 #define REVERSE_TIME                500
 #define REVERSE_SPEED_LIMIT         13.0f
 
-#define PI_FOUR                     0.78539816339744830961566084581988f
-#define PI_TEN                      0.314f
-#define PI_SEVEN										0.897f
+//#define PI_FOUR                     0.78539816339744830961566084581988f //没用过，就注释了
+//#define PI_TEN                      0.314f
+#define PI_SEVEN					0.897f
 
 //拨弹轮电机PID
 
@@ -100,38 +101,6 @@
 
 
 #define SHOOT_HEAT_REMAIN_VALUE     80
-
-#endif
-
-
-#ifdef INFANTRY_3
-
-#define TRIGGER_ANGLE_PID_KP        800.0f
-#define TRIGGER_ANGLE_PID_KI        0.5f
-#define TRIGGER_ANGLE_PID_KD        0.0f
-
-#define TRIGGER_BULLET_PID_MAX_OUT  10000.0f
-#define TRIGGER_BULLET_PID_MAX_IOUT 9000.0f
-
-#define TRIGGER_READY_PID_MAX_OUT   10000.0f
-#define TRIGGER_READY_PID_MAX_IOUT  7000.0f
-
-#define FRIC_LEFT_SPEED_PID_KP      5.0f
-#define FRIC_LEFT_SPEED_PID_KI			0.0f
-#define FRIC_LEFT_SPEED_PID_KD			0.3f
-#define FRIC_RIGHT_SPEED_PID_KP			5.0f
-#define FRIC_RIGHT_SPEED_PID_KI     0.0f
-#define FRIC_RIGHT_SPEED_PID_KD     0.3f
-
-#define FRIC_LEFT_PID_MAX_OUT   30000.0f
-#define FRIC_LEFT_PID_MAX_IOUT  5000.0f
-#define FRIC_RIGHT_PID_MAX_OUT   30000.0f
-#define FRIC_RIGHT_PID_MAX_IOUT  5000.0f
-
-
-#define SHOOT_HEAT_REMAIN_VALUE     80
-
-
 #endif
 
 
@@ -161,15 +130,44 @@
 
 
 #define SHOOT_HEAT_REMAIN_VALUE     80
-
 #endif
+
+
+#ifdef INFANTRY_3
+
+#define TRIGGER_ANGLE_PID_KP        800.0f
+#define TRIGGER_ANGLE_PID_KI        0.5f
+#define TRIGGER_ANGLE_PID_KD        0.0f
+
+#define TRIGGER_BULLET_PID_MAX_OUT  10000.0f
+#define TRIGGER_BULLET_PID_MAX_IOUT 9000.0f
+
+#define TRIGGER_READY_PID_MAX_OUT   10000.0f
+#define TRIGGER_READY_PID_MAX_IOUT  7000.0f
+
+#define FRIC_LEFT_SPEED_PID_KP      5.0f
+#define FRIC_LEFT_SPEED_PID_KI			0.0f
+#define FRIC_LEFT_SPEED_PID_KD			0.3f
+#define FRIC_RIGHT_SPEED_PID_KP			5.0f
+#define FRIC_RIGHT_SPEED_PID_KI     0.0f
+#define FRIC_RIGHT_SPEED_PID_KD     0.3f
+
+#define FRIC_LEFT_PID_MAX_OUT   30000.0f
+#define FRIC_LEFT_PID_MAX_IOUT  5000.0f
+#define FRIC_RIGHT_PID_MAX_OUT   30000.0f
+#define FRIC_RIGHT_PID_MAX_IOUT  5000.0f
+
+
+#define SHOOT_HEAT_REMAIN_VALUE     80
+#endif
+
 typedef enum
 {
     SHOOT_STOP = 0,
-    SHOOT_READY_FRIC,
+    SHOOT_READY_FRIC,// 打开摩擦轮
     SHOOT_BULLET,
     SHOOT_CONTINUE_BULLET,
-    SHOOT_DONE,
+    SHOOT_DONE,	//一次射击结束
 } shoot_mode_e;
 
 typedef enum
@@ -203,7 +201,7 @@ typedef struct
     pid_type_def trigger_motor_pid;
     fp32 trigger_speed_set;
     fp32 speed;
-    fp32 speed_set;
+    fp32 speed_set;		//摩擦轮速度
     fp32 angle;
     fp32 set_angle;
     int16_t given_current;
@@ -226,9 +224,10 @@ typedef struct
 
     uint16_t heat_limit;
     uint16_t heat;
-		fric_state_e fric_state;
-		uint8_t debug_flag;
-		bool_t auto_shoot_mode;
+	fric_state_e fric_state;
+	uint8_t debug_flag;//1-5对应不同状态
+	uint8_t speed_flag;//0是正常，1是禁止打弹
+	bool_t auto_shoot_mode;
 } shoot_control_t;
 
 //由于射击和云台使用同一个can的id故也射击任务在云台任务中执行

@@ -66,22 +66,6 @@ void PID_init(pid_type_def *pid, uint8_t mode, const fp32 PID[3], fp32 max_out, 
     pid->error[0] = pid->error[1] = pid->error[2] = pid->Pout = pid->Iout = pid->Dout = pid->out = 0.0f;
 }
 
-void PID_init_oldmethod(pid_type_def *pid, uint8_t mode, const fp32 PID[3], fp32 max_out, fp32 max_iout, fp32 max_dout, fp32 dT)
-{
-    if (pid == NULL || PID == NULL)
-    {
-        return;
-    }
-    pid->mode = PID_POSITION;
-    pid->Kp = PID[0];
-    pid->Ki = PID[1];
-    pid->Kd = PID[2];
-    pid->max_out = max_out;
-    pid->max_iout = max_iout;
-		pid->max_dout = max_dout;
-    pid->Dbuf[0] = pid->Dbuf[1] = pid->Dbuf[2] = 0.0f;
-    pid->error[0] = pid->error[1] = pid->error[2] = pid->Pout = pid->Iout = pid->Dout = pid->out = 0.0f;
-}
 
 
 /**
@@ -136,36 +120,36 @@ fp32 PID_calc(pid_type_def *pid, fp32 ref, fp32 set)
     return pid->out;
 }
 
-fp32 PID_calc_oldmethod(pid_type_def *pid, fp32 input, fp32 target) {
-	  if (pid == NULL)
-    {
-        return 0.0f;
-    }
-		
-    pid->error[2] = pid->error[1];
-    pid->error[1] = pid->error[0];
-    pid->set = target;
-    pid->fdb = input;
-    pid->error[0] = target - input;
-		pid->Pout = pid->Kp * pid->error[0];
-    pid->Iout += pid->Ki * pid->error[0] * pid->dT;
-    pid->Dbuf[2] = pid->Dbuf[1];
-    pid->Dbuf[1] = pid->Dbuf[0];
-    pid->Dbuf[0] = (pid->error[0] - pid->error[1]);
-    pid->Dout = pid->Kd * pid->Dbuf[0] / pid->dT;
-		
-    LimitMax(pid->Iout, pid->max_iout);
-		if(((pid->error[1]>0)&&(pid->error[0]<0))||((pid->error[1]<0)&&(pid->error[0]>0)))
-		{
-		LimitMax(pid->Iout, pid->max_iout/1000);
-		}
-    LimitMax(pid->Dout, pid->max_dout);
-		
-    pid->out = pid->Pout + pid->Iout + pid->Dout;
-    LimitMax(pid->out, pid->max_out);
-		
-		return pid->out;
-}
+//fp32 PID_calc_oldmethod(pid_type_def *pid, fp32 input, fp32 target) {
+//	  if (pid == NULL)
+//    {
+//        return 0.0f;
+//    }
+//		
+//    pid->error[2] = pid->error[1];
+//    pid->error[1] = pid->error[0];
+//    pid->set = target;
+//    pid->fdb = input;
+//    pid->error[0] = target - input;
+//		pid->Pout = pid->Kp * pid->error[0];
+//    pid->Iout += pid->Ki * pid->error[0] * pid->dT;
+//    pid->Dbuf[2] = pid->Dbuf[1];
+//    pid->Dbuf[1] = pid->Dbuf[0];
+//    pid->Dbuf[0] = (pid->error[0] - pid->error[1]);
+//    pid->Dout = pid->Kd * pid->Dbuf[0] / pid->dT;
+//		
+//    LimitMax(pid->Iout, pid->max_iout);
+//		if(((pid->error[1]>0)&&(pid->error[0]<0))||((pid->error[1]<0)&&(pid->error[0]>0)))
+//		{
+//		LimitMax(pid->Iout, pid->max_iout/1000);
+//		}
+//    LimitMax(pid->Dout, pid->max_dout);
+//		
+//    pid->out = pid->Pout + pid->Iout + pid->Dout;
+//    LimitMax(pid->out, pid->max_out);
+//		
+//		return pid->out;
+//}
 
 /**
   * @brief          pid out clear

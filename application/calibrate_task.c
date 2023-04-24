@@ -314,7 +314,7 @@ void calibrate_task(void const *pvParameters)
 int8_t get_control_temperature(void)
 {
 
-    return head_cali.temperature;
+    return (int8_t)GYRO_CONST_MAX_TEMP;//head_cali.temperature;
 }
 
 /**

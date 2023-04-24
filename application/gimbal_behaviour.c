@@ -84,7 +84,7 @@
 #include "bsp_buzzer.h"
 #include "detect_task.h"
 #include "user_lib.h"
-
+#include "shoot.h"
 // when gimbal is in calibrating, set buzzer frequency and strenght
 // 当云台在校准, 设置蜂鸣器频率和强度
 #define gimbal_warn_buzzer_on() buzzer_on(31, 20000)
@@ -92,6 +92,8 @@
 
 #define USE_RMSTATE 1
 #define int_abs(x) ((x) > 0 ? (x) : (-x))
+
+shoot_control_t shoot_control_2;
 /**
  * @brief          remote control dealline solve,because the value of rocker is not zero in middle place,
  * @param          input:the raw channel value
@@ -452,6 +454,8 @@ static void gimbal_behavour_set(gimbal_control_t *gimbal_mode_set)
     {
         return;
     }
+	shoot_control_2.shoot_rc = get_remote_control_point();
+
     // in cali mode, return
     // 校准行为，return 不会设置其他的模式
     if (gimbal_behaviour == GIMBAL_CALI && gimbal_mode_set->gimbal_cali.step != GIMBAL_CALI_END_STEP)
@@ -512,13 +516,13 @@ static void gimbal_behavour_set(gimbal_control_t *gimbal_mode_set)
     }
     else if (switch_is_mid(gimbal_mode_set->gimbal_rc_ctrl->rc.s[GIMBAL_MODE_CHANNEL]))
     {
-        if ((gimbal_mode_set->gimbal_rc_ctrl->key.v & KEY_PRESSED_OFFSET_C) == KEY_PRESSED_OFFSET_C)
+        if (shoot_control_2.shoot_rc->mouse.press_r)
         {
             gimbal_behaviour = GIMBAL_AUTO;
         }
         else
         {
-            gimbal_behaviour = GIMBAL_AUTO;
+            gimbal_behaviour = GIMBAL_ABSOLUTE_ANGLE;
         }
     }
     else if (switch_is_up(gimbal_mode_set->gimbal_rc_ctrl->rc.s[GIMBAL_MODE_CHANNEL]))
@@ -705,11 +709,11 @@ static void gimbal_absolute_angle_control(fp32 *yaw, fp32 *pitch, gimbal_control
     { // keyboard control 键鼠档
         if ((gimbal_control_set->gimbal_rc_ctrl->key.v & SWING_LEFT_KEY) == SWING_LEFT_KEY)
         {
-            *yaw = 0.005f;
+            *yaw = 0.003f;
         }
         else if ((gimbal_control_set->gimbal_rc_ctrl->key.v & SWING_RIGHT_KEY) == SWING_RIGHT_KEY)
         {
-            *yaw = -0.005f;
+            *yaw = -0.003f;
         }
         else
         {

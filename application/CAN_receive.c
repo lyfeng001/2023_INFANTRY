@@ -245,7 +245,7 @@ void CAN_cmd_chassis_reset_ID(void)
 void CAN_cmd_chassis(int16_t motor1, int16_t motor2, int16_t motor3, int16_t motor4)
 {
     uint32_t send_mail_box;
-    chassis_tx_message.StdId = CAN_CHASSIS_ALL_ID;
+    chassis_tx_message.StdId = CAN_CHASSIS_ALL_ID;//0x200
     chassis_tx_message.IDE = CAN_ID_STD;
     chassis_tx_message.RTR = CAN_RTR_DATA;
     chassis_tx_message.DLC = 0x08;
@@ -274,14 +274,15 @@ void CAN_cmd_supercap(int16_t flag)
 	uint8_t Powersourses_Uncharge=0x0000;
 	uint8_t Capsourses_Charge=0x0003;
 	uint8_t Capsourses_Uncharge=0x0002;
-		
+//	uint8_t Cap_qiangzhi=0x007;
+	
     supercap_tx_message.StdId = 0x300;
     supercap_tx_message.IDE = CAN_ID_STD;
     supercap_tx_message.RTR = CAN_RTR_DATA;
     supercap_tx_message.DLC = 0x08;
 		
-	if (flag==1){ //电容没充满，有剩余功率
-    supercap_can_send_data[0] = (unsigned char)(Powersourses_Charge);
+	if (flag==1){ //只充不放
+		supercap_can_send_data[0] = (unsigned char)(Powersourses_Charge);
 		supercap_can_send_data[1] = (unsigned char)0;
 		supercap_can_send_data[2] = (unsigned char)(Residue_Power >> 8);
 		supercap_can_send_data[3] = (unsigned char)Residue_Power;
@@ -290,7 +291,7 @@ void CAN_cmd_supercap(int16_t flag)
 		supercap_can_send_data[6] = (unsigned char)0;
 		supercap_can_send_data[7] = (unsigned char)0;
 	}
-	else if(flag==0){	//电池供电
+	else if(flag==0){	//电池供电，不充不放
 		supercap_can_send_data[0] = (unsigned char)(Powersourses_Uncharge);
 		supercap_can_send_data[1] = (unsigned char)0;
 		supercap_can_send_data[2] = (unsigned char)0;
@@ -300,17 +301,7 @@ void CAN_cmd_supercap(int16_t flag)
 		supercap_can_send_data[6] = (unsigned char)0;
 		supercap_can_send_data[7] = (unsigned char)0;
 	}
-	else if(flag==2){	//用电容供电,电池同时供电
-		supercap_can_send_data[0] = (unsigned char)(Capsourses_Charge);
-		supercap_can_send_data[1] = (unsigned char)0;
-		supercap_can_send_data[2] = (unsigned char)(Residue_Power>>8);
-		supercap_can_send_data[3] = (unsigned char)(Residue_Power);
-		supercap_can_send_data[4] = (unsigned char)0;
-		supercap_can_send_data[5] = (unsigned char)0;
-		supercap_can_send_data[6] = (unsigned char)0;
-		supercap_can_send_data[7] = (unsigned char)0;
-	}
-	else if(flag==3){	//用电容供电
+	else if(flag==2){	//不充但放
 		supercap_can_send_data[0] = (unsigned char)(Capsourses_Uncharge);
 		supercap_can_send_data[1] = (unsigned char)0;
 		supercap_can_send_data[2] = (unsigned char)0;
@@ -320,8 +311,18 @@ void CAN_cmd_supercap(int16_t flag)
 		supercap_can_send_data[6] = (unsigned char)0;
 		supercap_can_send_data[7] = (unsigned char)0;
 	}
+	else if(flag==3){	//边充边放
+		supercap_can_send_data[0] = (unsigned char)(Capsourses_Charge);
+		supercap_can_send_data[1] = (unsigned char)0;
+		supercap_can_send_data[2] = (unsigned char)(Residue_Power>>8);
+		supercap_can_send_data[3] = (unsigned char)(Residue_Power);
+		supercap_can_send_data[4] = (unsigned char)0;
+		supercap_can_send_data[5] = (unsigned char)0;
+		supercap_can_send_data[6] = (unsigned char)0;
+		supercap_can_send_data[7] = (unsigned char)0;
+	}
 	
-	  HAL_CAN_AddTxMessage(&hcan2, &supercap_tx_message, supercap_can_send_data, &send_mail_box);
+	HAL_CAN_AddTxMessage(&hcan2, &supercap_tx_message, supercap_can_send_data, &send_mail_box);
 }
 
 

@@ -25,14 +25,14 @@
 #include "detect_task.h"
 #include "usart_debug.h"
 
-#define POWER_LIMIT         80.0f
-#define WARNING_POWER       40.0f   
-#define WARNING_POWER_BUFF  50.0f   
+//#define POWER_LIMIT         80.0f
 
-#define NO_JUDGE_TOTAL_CURRENT_LIMIT    64000.0f    //16000 * 4, 
-#define BUFFER_TOTAL_CURRENT_LIMIT      16000.0f
-#define POWER_TOTAL_CURRENT_LIMIT       20000.0f
+//#define WARNING_POWER_BUFF  55.0f
 
+#define NO_JUDGE_TOTAL_CURRENT_LIMIT    64000.0f    //16000 * 4, 无判断总电流限制
+#define BUFFER_TOTAL_CURRENT_LIMIT      16000.0f    //缓冲器总电流限制
+#define POWER_TOTAL_CURRENT_LIMIT       20000.0f    //功率电流限制
+fp32 current_scale;
 /**
   * @brief          limit the power, mainly limit motor current
   * @param[in]      chassis_power_control: chassis data 
@@ -47,78 +47,62 @@
 		
 void chassis_power_control(chassis_move_t *chassis_power_control)
 {
-	float power_limit,warning_power;
+	float power_limit,warning_power,warning_power_buff;
 	
 	if(ext_game_robot_status.robot_level==1)
 	{
-		power_limit= 80.0;
 		warning_power = 40.0;
 	}
 	if(ext_game_robot_status.robot_level==2)
 	{
-		power_limit= 100.0;
 		warning_power = 50.0;
 	}
 	if(ext_game_robot_status.robot_level==3)
 	{
-		power_limit= 120.0;
 		warning_power = 60.0;
 	}
 	
-		fp32 chassis_power = 0.0f;
-		fp32 chassis_power_buffer = 0.0f;
-		fp32 total_current_limit = 0.0f;
-		fp32 total_current = 0.0f;
+	power_limit=ext_game_robot_status.chassis_power_limit;
+	
+	warning_power_buff=55.0f;
+	
+	fp32 chassis_power = 0.0f;
+	fp32 chassis_power_buffer = 0.0f;
+	fp32 total_current_limit = 0.0f;
+	fp32 total_current = 0.0f;
 	
     uint8_t robot_id = get_robot_id();
+	
     if(toe_is_error(REFEREE_TOE))
-    {
         total_current_limit = NO_JUDGE_TOTAL_CURRENT_LIMIT;
-    }
-    else if(robot_id == RED_ENGINEER || robot_id == BLUE_ENGINEER || robot_id == 0)
-    {
-        total_current_limit = NO_JUDGE_TOTAL_CURRENT_LIMIT;
-    }
     else
     {
         get_chassis_power_and_buffer(&chassis_power, &chassis_power_buffer);
-        // power > 80w and buffer < 60j, because buffer < 60 means power has been more than 80w
-        //功率超过80w 和缓冲能量小于60j,因为缓冲能量小于60意味着功率超过80w
-        if(chassis_power_buffer < WARNING_POWER_BUFF)
+      
+        if(chassis_power_buffer < warning_power_buff)
         {
             fp32 power_scale;
-            if(chassis_power_buffer > 5.0f)
+            if(chassis_power_buffer > 5.0f)//缩小WARNING_POWER_BUFF
             {
-                //scale down WARNING_POWER_BUFF
-                //缩小WARNING_POWER_BUFF
-                power_scale = chassis_power_buffer / WARNING_POWER_BUFF;
+                power_scale = chassis_power_buffer / warning_power_buff;
             }
-            else
+            else //only left 10% of WARNING_POWER_BUFF
             {
-                //only left 10% of WARNING_POWER_BUFF
-                power_scale = 5.0f / WARNING_POWER_BUFF;
+                power_scale = 5.0f / warning_power_buff;
             }
-            //scale down
-            //缩小
-            total_current_limit = BUFFER_TOTAL_CURRENT_LIMIT * power_scale;
+            total_current_limit = BUFFER_TOTAL_CURRENT_LIMIT * power_scale;//缩小
         }
-        else
+        else//缓冲能量大于
         {
-            //power > warning_power
-            //功率大于warning_power
-            if(chassis_power > warning_power)
+            if(chassis_power > warning_power)//功率大于warning_power
             {
                 fp32 power_scale;
-                //power < 80w
                 //功率小于80w
                 if(chassis_power < power_limit)
                 {
-                    //scale down
                     //缩小
                     power_scale = (power_limit - chassis_power) / (power_limit - warning_power);
-                    
                 }
-                //power > 80w
                 //功率大于80w
                 else
                 {
@@ -127,28 +111,25 @@ void chassis_power_control(chassis_move_t *chassis_power_control)
                 
                 total_current_limit = BUFFER_TOTAL_CURRENT_LIMIT + POWER_TOTAL_CURRENT_LIMIT * power_scale;
             }
-            //power < warning_power
             //功率小于warning_power
             else
             {
                 total_current_limit = BUFFER_TOTAL_CURRENT_LIMIT + POWER_TOTAL_CURRENT_LIMIT;
             }
-        }
+        } 
     }
 
     
     total_current = 0.0f;
-    //calculate the original motor current set
-    //计算原本电机电流设定
-    for(uint8_t i = 0; i < 4; i++)
+   
+    for(uint8_t i = 0; i < 4; i++) //计算电机电流设定
     {
         total_current += fabs(chassis_power_control->motor_speed_pid[i].out);
     }
     
-
     if(total_current > total_current_limit)
     {
-        fp32 current_scale = total_current_limit / total_current;
+        current_scale = total_current_limit / total_current;
         chassis_power_control->motor_speed_pid[0].out*=current_scale;
         chassis_power_control->motor_speed_pid[1].out*=current_scale;
         chassis_power_control->motor_speed_pid[2].out*=current_scale;

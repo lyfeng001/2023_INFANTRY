@@ -169,7 +169,7 @@ void chassis_task(void const *pvParameters)
         //底盘控制量设置
         chassis_set_contorl(&chassis_move);
         //chassis control pid calculate
-        //底盘控制PID计算
+        //底盘控制电流值计算
         chassis_control_loop(&chassis_move);
 
         //make sure  one motor is online at least, so that the control CAN message can be received
@@ -179,19 +179,15 @@ void chassis_task(void const *pvParameters)
             //when remote control is offline, chassis motor should receive zero current. 
             //当遥控器掉线的时候，发送给底盘电机零电流.
             if (toe_is_error(DBUS_TOE))
-            {
                 CAN_cmd_chassis(0, 0, 0, 0);
-            }
-            else
-            {
+            else{
                 //send control current
                 //发送控制电流
                 CAN_cmd_chassis(chassis_move.motor_chassis[0].give_current, chassis_move.motor_chassis[1].give_current,
                                 chassis_move.motor_chassis[2].give_current, chassis_move.motor_chassis[3].give_current);
-            //CAN_cmd_chassis(0, 0, 0, 0);
 			}
         }
-				//UART_DMA_SEND(ext_power_heat_data.chassis_power);
+		// UART_DMA_SEND(chassis_move.motor_chassis[0].chassis_motor_measure->speed_rpm);
         //os delay
         //系统延时
         vTaskDelay(CHASSIS_CONTROL_TIME_MS);
@@ -269,7 +265,13 @@ static void chassis_init(chassis_move_t *chassis_move_init)
 
     chassis_move_init->vy_max_speed = NORMAL_MAX_CHASSIS_SPEED_Y;
     chassis_move_init->vy_min_speed = -NORMAL_MAX_CHASSIS_SPEED_Y;
-
+	if(chassis_move_init->chassis_RC->key.v & KEY_PRESSED_OFFSET_F)
+	{
+		chassis_move_init->vx_max_speed += 1.0f; 
+		chassis_move_init->vx_min_speed -= 1.0f;
+		chassis_move_init->vy_max_speed += 1.0f;
+		chassis_move_init->vy_min_speed -= 1.0f;
+	}
     //update data
     //更新一下数据
     chassis_feedback_update(chassis_move_init);
@@ -412,23 +414,23 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *ch
 				 chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY ||
 				 chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY )
 			{
-					 if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY)
-					{
-						vx_set_channel = chassis_move_rc_to_vector->vx_max_speed;
-					}
-					else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY)
-					{
-						vx_set_channel = chassis_move_rc_to_vector->vx_min_speed;
-					}
+				 if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY)
+				{
+					vx_set_channel = -chassis_move_rc_to_vector->vx_max_speed;
+				}
+				else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY)
+				{
+					vx_set_channel = -chassis_move_rc_to_vector->vx_min_speed;
+				}
 
-					if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY)
-					{
-						vy_set_channel = chassis_move_rc_to_vector->vy_max_speed;
-					}
-					else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
-					{
-						vy_set_channel = chassis_move_rc_to_vector->vy_min_speed;
-					}
+				if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY)
+				{
+					vy_set_channel = -chassis_move_rc_to_vector->vy_max_speed;
+				}
+				else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
+				{
+					vy_set_channel = -chassis_move_rc_to_vector->vy_min_speed;
+				}
 			}
 			else
 			{
@@ -443,44 +445,14 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *ch
 			rc_deadband_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
 			//remote set speed set-point
 			//遥控器控制
-			vx_set_channel = vx_channel * (CHASSIS_VX_RC_SEN);
-			vy_set_channel = vy_channel * (-CHASSIS_VY_RC_SEN);
+			vx_set_channel = -vx_channel * (CHASSIS_VX_RC_SEN);
+			vy_set_channel = -vy_channel * (-CHASSIS_VY_RC_SEN);
 		}
 		else{	//不控制机器人
 			vx_set_channel = 0;
 			vy_set_channel = 0;
 		}
-    
-#else
-		//deadline, because some remote control need be calibrated,  the value of rocker is not zero in middle place,
-    //死区限制，因为遥控器可能存在差异 摇杆在中间，其值不为0
-    rc_deadband_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_X_CHANNEL], vx_channel, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
-
-    vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
-    vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
-		
-	  //keyboard set speed set-point
-    //键盘控制
-    if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY)
-    {
-        vx_set_channel = chassis_move_rc_to_vector->vx_max_speed;
-    }
-    else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY)
-    {
-        vx_set_channel = chassis_move_rc_to_vector->vx_min_speed;
-    }
-
-    if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY)
-    {
-        vy_set_channel = chassis_move_rc_to_vector->vy_max_speed;
-    }
-    else if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
-    {
-        vy_set_channel = chassis_move_rc_to_vector->vy_min_speed;
-    }
 #endif
-		
     //first order low-pass replace ramp function, calculate chassis speed set-point to improve control performance
     //一阶低通滤波代替斜波作为底盘速度输入
     first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vx, vx_set_channel);
@@ -500,6 +472,13 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *ch
     *vx_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out;
     *vy_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vy.out;
 }
+
+
+bool spinning_state = 0;
+uint16_t spinning_time=0;
+uint16_t stop_spinning_time=0;
+bool press_spinning=0;
+
 /**
   * @brief          set chassis control set-point, three movement control value is set by "chassis_behaviour_control_set".
   * @param[out]     chassis_move_update: "chassis_move" valiable point
@@ -512,11 +491,11 @@ void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *ch
   */
 static void chassis_set_contorl(chassis_move_t *chassis_move_control)
 {
-
     if (chassis_move_control == NULL)
     {
         return;
     }
+	press_spinning=0;
 
     fp32 vx_set = 0.0f, vy_set = 0.0f, angle_set = 0.0f;
     //get three control set-point, 获取三个控制设置值
@@ -535,34 +514,41 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
         chassis_move_control->vy_set = -sin_yaw * vx_set + cos_yaw * vy_set;
         //set control relative angle  set-point
         //设置控制相对云台角度
-			
-//        chassis_move_control->chassis_relative_angle_set = rad_format(angle_set);
 
-				//set control relative angle  set-point / calculate ratation speed
         //设置控制相对云台角度(chassis_relative_angle_set),计算旋转PID角速度(wz_set) —— 
-			  //小陀螺模式控制与否
-				if ((chassis_move_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_SHIFT ) == KEY_PRESSED_OFFSET_SHIFT)
-				{
-					spinning_move(chassis_move_control,angle_set);
-				}
-				else
-				{
-					chassis_move_control->chassis_relative_angle_set = rad_format(angle_set);
-					chassis_move_control->wz_set = (-PID_calc(&chassis_move_control->chassis_angle_pid, chassis_move_control->chassis_yaw_motor->relative_angle, chassis_move_control->chassis_relative_angle_set));
-				}
-		    //if ((chassis_move_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_Q ) == KEY_PRESSED_OFFSET_Q)
-				//{
-					//spinning_move(chassis_move_control,angle_set);
-				//}
-        //calculate ratation speed
-        //计算旋转PID角速度
-      
-				//speed limit
+	    //小陀螺模式控制与否
+		press_spinning = (chassis_move_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_SHIFT ) == KEY_PRESSED_OFFSET_SHIFT;
+		
+		if (press_spinning==1 && spinning_state==0 &&stop_spinning_time>500)//开始小陀螺
+		{
+			spinning_state = 1;
+			spinning_time=0;
+			stop_spinning_time=0;
+		}
+		if(press_spinning==1 && spinning_state==1 && spinning_time>500){//关闭小陀螺
+			spinning_state = 0;
+			spinning_time=0;
+			stop_spinning_time=0;
+			chassis_move_control->wz_set =0;
+		} 
+		if(spinning_state == 1){
+			spinning_move(chassis_move_control,angle_set);
+			spinning_time++;
+		}
+		else
+		{
+			stop_spinning_time++;
+			chassis_move_control->chassis_relative_angle_set = rad_format(angle_set);
+			chassis_move_control->wz_set = (-PID_calc(&chassis_move_control->chassis_angle_pid, 
+											chassis_move_control->chassis_yaw_motor->relative_angle, chassis_move_control->chassis_relative_angle_set));
+		}
+
+		//speed limit
         //速度限幅
         chassis_move_control->vx_set = fp32_constrain(chassis_move_control->vx_set, chassis_move_control->vx_min_speed, chassis_move_control->vx_max_speed);
         chassis_move_control->vy_set = fp32_constrain(chassis_move_control->vy_set, chassis_move_control->vy_min_speed, chassis_move_control->vy_max_speed);
     }
-    else if (chassis_move_control->chassis_mode == CHASSIS_VECTOR_FOLLOW_CHASSIS_YAW)
+    else if (chassis_move_control->chassis_mode == CHASSIS_VECTOR_FOLLOW_CHASSIS_YAW)//步兵不会进
     {
         fp32 delat_angle = 0.0f;
         //set chassis yaw angle set-point
@@ -602,14 +588,14 @@ static void chassis_set_contorl(chassis_move_t *chassis_move_control)
   * @param[out]     chassis_move_control_loop:"chassis_move"变量指针.
   * @retval         none
   */
-static void spinning_move (chassis_move_t *chassis_move_spinnig,fp32 angle_tran)
+static void spinning_move (chassis_move_t *chassis_move_spinnig,fp32 angle_tran)//angle_tran=目的角度
 {
-		chassis_move_spinnig->chassis_relative_angle_set = rad_format(angle_tran)
-																											 + chassis_move_spinnig->chassis_yaw_motor->relative_angle;
-
-    chassis_move_spinnig->wz_set = (-1.5f*PID_calc(&chassis_move_spinnig->chassis_angle_pid,
-																		chassis_move_spinnig->chassis_yaw_motor->relative_angle,
-																		chassis_move_spinnig->chassis_relative_angle_set));
+	chassis_move_spinnig->chassis_relative_angle_set = rad_format(angle_tran)+ chassis_move_spinnig->chassis_yaw_motor->relative_angle;
+	
+	//计算旋转角速度
+    chassis_move_spinnig->wz_set = (-3.0f*PID_calc(&chassis_move_spinnig->chassis_angle_pid,//2.25
+													chassis_move_spinnig->chassis_yaw_motor->relative_angle,
+													chassis_move_spinnig->chassis_relative_angle_set));
 }
 
 /**
@@ -663,14 +649,9 @@ static void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
     chassis_vector_to_mecanum_wheel_speed(chassis_move_control_loop->vx_set,
                                           chassis_move_control_loop->vy_set, chassis_move_control_loop->wz_set, wheel_speed);
 
-    if (chassis_move_control_loop->chassis_mode == CHASSIS_VECTOR_RAW)
-    {
-        
+    if (chassis_move_control_loop->chassis_mode == CHASSIS_VECTOR_RAW){
         for (i = 0; i < 4; i++)
-        {
             chassis_move_control_loop->motor_chassis[i].give_current = (int16_t)(wheel_speed[i]);
-        }
-        //in raw mode, derectly return
         //raw控制直接返回
         return;
     }
@@ -686,7 +667,6 @@ static void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
             max_vector = temp;
         }
     }
-
     if (max_vector > MAX_WHEEL_SPEED)
     {
         vector_rate = MAX_WHEEL_SPEED / max_vector;
@@ -700,28 +680,15 @@ static void chassis_control_loop(chassis_move_t *chassis_move_control_loop)
     //计算pid
     for (i = 0; i < 4; i++)
     {
-        PID_calc(&chassis_move_control_loop->motor_speed_pid[i], chassis_move_control_loop->motor_chassis[i].speed, chassis_move_control_loop->motor_chassis[i].speed_set);
+        PID_calc(&chassis_move_control_loop->motor_speed_pid[i], chassis_move_control_loop->motor_chassis[i].speed, 
+					chassis_move_control_loop->motor_chassis[i].speed_set);
     }
-
 
     //功率控制
     chassis_power_control(chassis_move_control_loop);
 
-
     //赋值电流值
     for (i = 0; i < 4; i++)
-    {
         chassis_move_control_loop->motor_chassis[i].give_current = (int16_t)(chassis_move_control_loop->motor_speed_pid[i].out);
-    }
-//	num++;
-//	if(num<1000&&num%10==1)
-//		UART_DMA_SEND( fabs(chassis_move_control_loop->motor_chassis[0].give_current));
-//	else if(num<2000&&num%10==1)
-//		UART_DMA_SEND( fabs(chassis_move_control_loop->motor_chassis[1].give_current));
-//	else if(num<3000&&num%10==1)
-//		UART_DMA_SEND( fabs(chassis_move_control_loop->motor_chassis[2].give_current));
-//	else if(num<4000&&num%10==1)
-//		UART_DMA_SEND( fabs(chassis_move_control_loop->motor_chassis[3].give_current));
-//	else
-//		num=0;
+
 }

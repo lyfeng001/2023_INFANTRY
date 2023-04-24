@@ -17,7 +17,8 @@
 #include "referee_usart_task.h"
 #include "main.h"
 #include "cmsis_os.h"
-
+#include "chassis_task.h"
+#include "shoot.h"
 #include "bsp_usart.h"
 #include "detect_task.h"
 
@@ -25,9 +26,10 @@
 #include "fifo.h"
 #include "protocol.h"
 #include "referee.h"
+#include "supercap_task.h"
+#include "servo_task.h"
 
-
-
+extern cap_control_t cap_control;
 
 /**
   * @brief          single byte upacked 
@@ -43,6 +45,10 @@ static void referee_unpack_fifo_data(void);
 
  
 extern UART_HandleTypeDef huart6;
+
+//extern ext_robot_command_t     ext_robot_command; 
+extern shoot_control_t shoot_control;//shoot state
+extern bool spinning_state;
 
 uint8_t usart6_buf[2][USART_RX_BUF_LENGHT];
 
@@ -60,19 +66,135 @@ unpack_data_t referee_unpack_obj;
   * @param[in]      pvParameters: NULL
   * @retval         none
   */
+//int UI_flag = 0 ;
 void referee_usart_task(void const * argument)
 {
-    init_referee_struct_data();
-    fifo_s_init(&referee_fifo, referee_fifo_buf, REFEREE_FIFO_BUF_LENGTH);
-    usart6_init(usart6_buf[0], usart6_buf[1], USART_RX_BUF_LENGHT);
-
+    init_referee_struct_data();//为用于盛装数据的各个结构体分配空间。
+    fifo_s_init(&referee_fifo, referee_fifo_buf, REFEREE_FIFO_BUF_LENGTH);//初始化用于交换裁判系统信息的队列缓存
+    usart6_init(usart6_buf[0], usart6_buf[1], USART_RX_BUF_LENGHT);//通过6号串口收发来自电源管理模块的数据，送至主控模块通过WIFI与服务器通信。
+		//USART6通过串口中断接收数据。
+	
+		uint16_t UI_PushUp_Counter = 261;
+		/* 裁判系统初始化 */
+		vTaskDelay(300);
+	
     while(1)
-    {
+    {		
+			referee_unpack_fifo_data();//接收数据
+			vTaskDelay(10);
+		
+			UI_PushUp_Counter++;
+				
+			if(UI_PushUp_Counter>=1000)
+			{UI_PushUp_Counter = 10;}
+			
+			if(UI_PushUp_Counter % 300 ==0){
+				//rub frame
+				send_frame1_graphic("001",1800,500);
+				continue;
+			}
+			if(UI_PushUp_Counter % 310 ==0){
+				//spinning frame
+				send_frame1_graphic("002",1800,700);
+				continue;
+			}
+			
+			if(UI_PushUp_Counter % 400 ==0){
+				//cap frame
+				send_frame2_graphic("005",750,100,800,60);
+				continue;
+			}
+			if(UI_PushUp_Counter % 420 ==0){
+				//cap frame
+				send_frame2_graphic("006",820,100,870,60);
+				continue;
+			}
+			if(UI_PushUp_Counter % 440 ==0){
+				//cap frame
+				send_frame2_graphic("007",890,100,940,60);
+				continue;
+			}
+			if(UI_PushUp_Counter % 460 ==0){
+				//cap frame
+				send_frame2_graphic("008",960,100,1010,60);
+				continue;
+			}
+		/*	if(UI_PushUp_Counter % 310 ==0){
+				//CAP
+				continue;
+			}*/
+			
+			if(UI_PushUp_Counter % 21 ==0){
+				//REST ENERGY
+				if(24000<cap_control.cap_message->cap_vol&&cap_control.cap_message->cap_vol<27000)
+					send_capvol_graphic("009",752,798,2,1);
+				else
+					send_capvol_graphic("009",752,798,2,3);
+				continue;
+			}
+			if(UI_PushUp_Counter % 16 ==0){
+				//REST ENERGY
+				if(22000<cap_control.cap_message->cap_vol&&cap_control.cap_message->cap_vol<24000)
+					send_capvol_graphic("010",822,868,1,1);
+				else
+					send_capvol_graphic("010",822,868,1,3);
+			}
+			if(UI_PushUp_Counter % 11 ==0){
+				//REST ENERGY
+				if(20000<cap_control.cap_message->cap_vol&&cap_control.cap_message->cap_vol<22000)
+					send_capvol_graphic("011",892,938,3,1);
+				else
+					send_capvol_graphic("011",892,938,3,3);
+				continue;
+			}
+			if(UI_PushUp_Counter % 26 ==0){
+				//REST ENERGY
+				if(18000<cap_control.cap_message->cap_vol&&cap_control.cap_message->cap_vol<20000)
+					send_capvol_graphic("012",962,1008,4,1);
+				else
+					send_capvol_graphic("012",962,1008,4,3);
+				continue;
+			}
+			if(UI_PushUp_Counter % 41 ==0){
+				if(get_gimbal_servo_t()->ammo_lip_state==LIP_OPEN_STATE){
+					send_spinning_graphic("013", 1800,200,4,1);
+				}
+				else{
+					send_spinning_graphic("013", 1800,200,4,3);
+				}
+			}
+			
+			if(UI_PushUp_Counter % 36 ==0){
+				//STATE OF RUB
+				if (shoot_control.fric_state == FRIC_ON)
+				{
+					send_rub_graphic("004", 1800,500,2,1);//green
+				}
+				else
+				{
+					send_rub_graphic("004", 1800,500,2,3);
+				}
+			
+				continue;
+			}
+				
+			if(UI_PushUp_Counter % 31 ==0){
+				//STATE OF SPINNING
+				if (spinning_state == 1)
+			  {
+					send_spinning_graphic("003", 1800,700,2,1);//green
+				}
+				else
+				{
+					send_spinning_graphic("003", 1800,700,3,3);
+				}
+				continue;
+			}
 
-        referee_unpack_fifo_data();
-        osDelay(10);
     }
 }
+
+
 
 
 /**
@@ -214,5 +336,6 @@ void USART6_IRQHandler(void)
         }
     }
 }
+
 
 

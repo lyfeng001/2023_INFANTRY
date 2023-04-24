@@ -84,9 +84,8 @@
 #include "cmsis_os.h"
 #include "chassis_task.h"
 #include "arm_math.h"
-
 #include "gimbal_behaviour.h"
-
+#include "stdbool.h" 
 /**
   * @brief          when chassis behaviour mode is CHASSIS_ZERO_FORCE, the function is called
   *                 and chassis control mode is raw. The raw chassis control mode means set value
@@ -211,7 +210,7 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *vy_set, fp32 *wz_s
 
 static void chassis_open_set_control(fp32 *vx_set, fp32 *vy_set, fp32 *wz_set, chassis_move_t *chassis_move_rc_to_vector);
 
-
+extern bool spinning_state;
 
 
 
@@ -243,7 +242,7 @@ void chassis_behaviour_mode_set(chassis_move_t *chassis_move_mode)
     //遥控器设置模式
     if (switch_is_mid(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
     {
-        chassis_behaviour_mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW;//CHASSIS_NO_FOLLOW_YAW;
+        chassis_behaviour_mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW;
     }
     else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
     {
@@ -454,7 +453,7 @@ static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *vy_se
 
     //judge if swing
     //判断是否要摇摆
-    if (switch_is_mid(chassis_move_rc_to_vector->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))// (chassis_move_rc_to_vector->chassis_RC->key.v & SWING_KEY)
+    if (spinning_state == 1)//有小陀螺
     {
         if (swing_flag == 0)
         {
@@ -472,22 +471,16 @@ static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *vy_se
     if (chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_FRONT_KEY || chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_BACK_KEY ||
         chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_LEFT_KEY || chassis_move_rc_to_vector->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
     {
-        max_angle = SWING_MOVE_ANGLE;
+        max_angle = SWING_MOVE_ANGLE;//0.314
     }
     else
-    {
-        max_angle = SWING_NO_MOVE_ANGLE;
-    }
-    
+        max_angle = SWING_NO_MOVE_ANGLE;//0.7
+
     if (swing_flag)
-    {
-        swing_angle = 0.2f*max_angle;// * arm_sin_f32(swing_time);
-//        swing_time += add_time;
-    }
+        swing_angle = 0.2f*max_angle;
     else
-    {
         swing_angle = 0.0f;
-    }
+	
     //swing_time  range [0, 2*PI]
     //sin函数不超过2pi
     if (swing_time > 2 * PI)
@@ -525,7 +518,7 @@ static void chassis_engineer_follow_chassis_yaw_control(fp32 *vx_set, fp32 *vy_s
 
     chassis_rc_to_control_vector(vx_set, vy_set, chassis_move_rc_to_vector);
 
-		*angle_set = rad_format(chassis_move_rc_to_vector->chassis_yaw_set - CHASSIS_ANGLE_Z_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL]);
+	*angle_set = rad_format(chassis_move_rc_to_vector->chassis_yaw_set - CHASSIS_ANGLE_Z_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL]);
 }
 
 /**
@@ -555,9 +548,8 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *vy_set, fp32 *wz_s
     }
 
     chassis_rc_to_control_vector(vx_set, vy_set, chassis_move_rc_to_vector);
-		
 
-		*wz_set = -CHASSIS_WZ_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL];
+	*wz_set = -CHASSIS_WZ_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL];
 		
 }
 
@@ -589,6 +581,6 @@ static void chassis_open_set_control(fp32 *vx_set, fp32 *vy_set, fp32 *wz_set, c
     *vx_set = chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_X_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
     *vy_set = -chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
 
-		*wz_set = -chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
+	*wz_set = -chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
     return;
 }

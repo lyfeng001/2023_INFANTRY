@@ -70,7 +70,7 @@ typedef __packed struct
         __packed struct
         {
                 int16_t ch[5];
-                char s[2];
+                char s[2];  //0ÊÇÓÒ£¬1ÊÇ×ó
         } rc;
         __packed struct
         {

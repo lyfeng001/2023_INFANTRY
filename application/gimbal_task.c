@@ -40,6 +40,8 @@
 #include "INS_task.h"
 #include "shoot.h"
 #include "pid.h"
+#include "referee.h"
+#include "tim.h"
 
 // motor enconde value format, range[0-8191]
 // 电机编码值规整 0—8191
@@ -298,7 +300,11 @@ gimbal_control_t gimbal_control;
 // 发送的电机电流
 static int16_t yaw_can_set_current = 0, pitch_can_set_current = 0, shoot_can_set_current = 0; //,cover_can_set_current = 0;
 
-static uint8_t send_count = 0;
+//以下4个declared but never referenced
+//static uint8_t send_count = 0;
+//static fp32 yaw_tx = 0.0f;
+//static fp32 pitch_tx = 0.0f;
+//static fp32 bullet_speed_tx = 0.0f;
 
 /**
  * @brief          gimbal task, osDelay GIMBAL_CONTROL_TIME (1ms)
@@ -325,6 +331,8 @@ void gimbal_task(void const *pvParameters)
 	autoaim_init();
 	// wait for all motor online
 	// 判断电机是否都上线
+	
+	
 	while (toe_is_error(YAW_GIMBAL_MOTOR_TOE) || toe_is_error(PITCH_GIMBAL_MOTOR_TOE))
 	{
 		vTaskDelay(GIMBAL_CONTROL_TIME);
@@ -371,19 +379,8 @@ void gimbal_task(void const *pvParameters)
 		J_scope_gimbal_test();
 #endif
 
-
-		send_count++;
-		if (send_count == 5) // 5ms向上位机发一次数据
-		{
-			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13, GPIO_PIN_SET);
-			send_to_computer(-gimbal_control.gimbal_yaw_motor.absolute_angle, gimbal_control.gimbal_pitch_motor.absolute_angle);
-			send_count = 0;
-		}
-		else
-		{
-			HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13, GPIO_PIN_RESET);
-		}
-
+		
+		send_to_computer(-gimbal_control.gimbal_yaw_motor.absolute_angle, gimbal_control.gimbal_pitch_motor.absolute_angle);
 
 
 		vTaskDelay(GIMBAL_CONTROL_TIME);
@@ -660,12 +657,15 @@ const gimbal_motor_t *get_pitch_motor_point(void)
 static void gimbal_init(gimbal_control_t *init)
 {
 
+	
 	static const fp32 Pitch_speed_pid[3] = {PITCH_SPEED_PID_KP, PITCH_SPEED_PID_KI, PITCH_SPEED_PID_KD};
 	static const fp32 Yaw_speed_pid[3] = {YAW_SPEED_PID_KP, YAW_SPEED_PID_KI, YAW_SPEED_PID_KD};
 	// 电机数据指针获取
 	init->gimbal_yaw_motor.gimbal_motor_measure = get_yaw_gimbal_motor_measure_point();
 	init->gimbal_pitch_motor.gimbal_motor_measure = get_pitch_gimbal_motor_measure_point();
 
+	
+	
 	// 初始化电机中值和限位
 	init->gimbal_yaw_motor.offset_ecd = MIDDLE_YAW;
 	init->gimbal_pitch_motor.offset_ecd = MIDDLE_PITCH;
@@ -911,10 +911,10 @@ static void gimbal_set_control(gimbal_control_t *set_control)
 	{
 		CAN_cmd_gimbal(0, 0, 0); // 第四个本来是缺省
 	}
-	else if ((set_control->gimbal_rc_ctrl->key.v & KEY_PRESSED_OFFSET_CTRL) == KEY_PRESSED_OFFSET_CTRL)
-	{
-		CAN_cmd_gimbal(0, 0, 0); // 第四个本来是缺省
-	}
+//	else if ((set_control->gimbal_rc_ctrl->key.v & KEY_PRESSED_OFFSET_CTRL) == KEY_PRESSED_OFFSET_CTRL)
+//	{
+//		CAN_cmd_gimbal(0, 0, 0); // 第四个本来是缺省
+//	}
 }
 /**
  * @brief          gimbal control mode :GIMBAL_MOTOR_GYRO, use euler angle calculated by gyro sensor to control.
@@ -1092,8 +1092,7 @@ static void gimbal_motor_absolute_angle_control(gimbal_motor_t *gimbal_motor)
 	// 角度环，速度环串级pid调试
 	gimbal_motor->motor_gyro_set = gimbal_PID_calc(&gimbal_motor->gimbal_motor_absolute_angle_pid, gimbal_motor->absolute_angle, gimbal_motor->absolute_angle_set, -gimbal_motor->motor_gyro);
 	gimbal_motor->current_set = PID_calc(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro, gimbal_motor->motor_gyro_set);
-	//		gimbal_motor->motor_gyro_set = gimbal_PID_calc_oldmethod(&gimbal_motor->gimbal_motor_absolute_angle_pid, gimbal_motor->absolute_angle, gimbal_motor->absolute_angle_set);
-	//		gimbal_motor->current_set = PID_calc_oldmethod(&gimbal_motor->gimbal_motor_gyro_pid, gimbal_motor->motor_gyro * 57.3f, gimbal_motor->motor_gyro_set / 20.0f);
+	
 	// 控制值赋值
 	gimbal_motor->given_current = (int16_t)(gimbal_motor->current_set);
 }
